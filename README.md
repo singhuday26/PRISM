@@ -33,19 +33,37 @@ cp .env.example .env
 # Edit .env and set MONGO_URI
 ```
 
-### 3. Run API Server
+### 3. Start PRISM (All Services)
+
+**Option A - One Command (Recommended)**:
 
 ```bash
-uvicorn backend.app:app --reload
+python start_prism.py
 ```
 
-Visit http://localhost:8000/docs for API documentation.
+This starts both the API and Dashboard automatically!
 
-### 4. Run Dashboard (Optional)
+**Option B - Separate Services**:
+
+**Terminal 1 - API Server**:
 
 ```bash
-streamlit run backend/dashboard/app.py
+python -m uvicorn backend.app:app --reload
 ```
+
+**Terminal 2 - Dashboard**:
+
+```bash
+python run_dashboard.py
+```
+
+### 4. Access Web Interfaces
+
+- **📊 Streamlit Dashboard**: http://localhost:8501
+- **🔌 API Documentation**: http://localhost:8000/docs
+- **⚕️ Health Check**: http://localhost:8000/health
+
+See [Web Interface Guide](docs/WEB_INTERFACE_GUIDE.md) for detailed instructions.
 
 ## Project Structure
 
@@ -61,8 +79,11 @@ streamlit run backend/dashboard/app.py
 
 ## Documentation
 
-- [Security Best Practices](SECURITY.md) - Security guidelines and configuration
-- [Development Guide](DEVELOPMENT.md) - Setup, testing, and development workflow
+- **[Web Interface Guide](docs/WEB_INTERFACE_GUIDE.md)** - Dashboard and API access
+- **[Multi-Disease Guide](docs/MULTI_DISEASE_GUIDE.md)** - Multi-disease support and management
+- **[Security Best Practices](SECURITY.md)** - Security guidelines and configuration
+- **[Development Guide](DEVELOPMENT.md)** - Setup, testing, and development workflow
+- **[Quick Start](QUICKSTART.md)** - Fast track to get PRISM running
 
 ## API Endpoints
 
