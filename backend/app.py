@@ -20,6 +20,7 @@ from .routes.alerts import router as alerts_router
 from .routes.forecasts import router as forecasts_router
 from .routes.evaluation import router as evaluation_router
 from .routes.pipeline import router as pipeline_router
+from .routes.diseases import router as diseases_router
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +119,7 @@ def create_app() -> FastAPI:
     app.include_router(forecasts_router, prefix="/forecasts", tags=["forecasts"])
     app.include_router(pipeline_router, prefix="/pipeline", tags=["pipeline"])
     app.include_router(evaluation_router, prefix="/evaluation", tags=["evaluation"])
+    app.include_router(diseases_router, tags=["diseases"])
 
     # Serve frontend static files
     frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
