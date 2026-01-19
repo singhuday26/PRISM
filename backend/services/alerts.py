@@ -8,6 +8,7 @@ from pymongo import DESCENDING
 
 from backend.config import get_settings
 from backend.db import get_db
+from backend.services.notifications import dispatch_notifications
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,11 @@ def generate_alerts(target_date: Optional[str] = None, disease: Optional[str] = 
 
         alerts.sort(key=lambda x: x.get("risk_score", 0.0), reverse=True)
         logger.info(f"Generated {len(alerts)} alerts")
+
+        # Dispatch notifications to configured channels
+        if alerts:
+            dispatch_notifications(alerts)
+
         return target_date, alerts
     except Exception as e:
         logger.error(f"Error generating alerts: {e}")

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Optional
 from pydantic import Field, field_validator, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import sys
@@ -17,6 +18,18 @@ class Settings(BaseSettings):
     mongo_server_selection_timeout_ms: int = Field(5000, env="MONGO_SERVER_SELECTION_TIMEOUT_MS", ge=1000)
     enable_cors: bool = Field(True, env="ENABLE_CORS")
     cors_origins: str = Field("*", env="CORS_ORIGINS", description="Comma-separated list of allowed origins")
+    
+    # Alerting Settings
+    alert_channels: list[str] = Field(["console"], env="ALERT_CHANNELS", description="Enabled alert channels: console, email, sms")
+    alert_email_recipients: list[str] = Field([], env="ALERT_EMAIL_RECIPIENTS")
+    alert_sms_recipients: list[str] = Field([], env="ALERT_SMS_RECIPIENTS")
+    
+    # SMTP Settings (Optional)
+    smtp_server: Optional[str] = Field(None, env="SMTP_SERVER")
+    smtp_port: int = Field(587, env="SMTP_PORT")
+    smtp_user: Optional[str] = Field(None, env="SMTP_USER")
+    smtp_password: Optional[str] = Field(None, env="SMTP_PASSWORD")
+    smtp_sender: str = Field("alerts@prism-system.local", env="SMTP_SENDER")
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
