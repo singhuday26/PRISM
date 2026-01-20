@@ -155,3 +155,83 @@ def latest(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred",
         )
+
+
+@router.post("/generate-arima", response_model=ForecastsResponse)
+def generate_arima(
+    date: Optional[str] = Query(None, description="ISO date YYYY-MM-DD"),
+    horizon: int = Query(7, ge=1, le=30),
+    disease: Optional[str] = Query(None, description="Filter by disease"),
+    granularity: Optional[str] = Query(
+        "monthly", 
+        description="Data granularity: 'yearly', 'monthly', or 'weekly'"
+    ),
+    use_seasonal: bool = Query(
+        True, 
+        description="Use seasonal ARIMA (SARIMA) for better seasonality modeling"
+    )
+):
+    """
+    Generate ARIMA/SARIMA forecasts for all regions.
+    
+    This endpoint uses statistical ARIMA models instead of the naive baseline.
+    ARIMA provides:
+    - Automatic model selection (auto_arima)
+    - Confidence intervals based on model uncertainty
+    - Seasonal pattern recognition (when use_seasonal=true)
+    
+    Note: Requires more historical data and takes longer to compute.
+    """
+    try:
+        from backend.services.arima_forecasting import generate_arima_forecasts
+        
+        validated_date = validate_iso_date(date)
+        validated_disease = validate_disease(disease)
+        validated_granularity = validate_granularity(granularity)
+        
+        disease_info = f" for disease: {validated_disease}" if validated_disease else ""
+        logger.info(
+            f"Generating ARIMA forecasts for date: {validated_date or 'latest'} "
+            f"with horizon {horizon}{disease_info} using {validated_granularity} data"
+        )
+        
+        used_date, forecasts = generate_arima_forecasts(
+            target_date=validated_date, 
+            horizon=horizon, 
+            disease=validated_disease, 
+            granularity=validated_granularity,
+            use_seasonal=use_seasonal,
+        )
+        logger.info(f"Generated {len(forecasts)} ARIMA forecasts for date {used_date}")
+        
+        response = {
+            "date": used_date, 
+            "forecasts": forecasts, 
+            "count": len(forecasts), 
+            "granularity": validated_granularity
+        }
+        if validated_disease:
+            response["disease"] = validated_disease
+        return response
+    except (DateValidationError, DiseaseValidationError, GranularityValidationError) as e:
+        _handle_validation_error(e)
+    except ImportError as e:
+        logger.error(f"ARIMA dependencies not installed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="ARIMA forecasting requires pmdarima. Run: pip install pmdarima statsmodels",
+        )
+    except HTTPException:
+        raise
+    except PyMongoError as e:
+        logger.error(f"Database error generating ARIMA forecasts: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database error occurred while generating ARIMA forecasts",
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error generating ARIMA forecasts: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while generating ARIMA forecasts",
+        )

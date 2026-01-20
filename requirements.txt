@@ -22,6 +22,10 @@ requests==2.31.0
 pandas==2.2.0
 numpy==1.26.3
 
+# Forecasting
+statsmodels>=0.14.0
+pmdarima>=2.0.4
+
 # Testing
 pytest>=8.0.0
 pytest-cov>=4.1.0
