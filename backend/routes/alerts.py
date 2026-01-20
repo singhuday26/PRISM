@@ -8,26 +8,24 @@ from pymongo.errors import PyMongoError
 
 from backend.db import get_db
 from backend.services.alerts import generate_alerts
+from backend.utils.validators import validate_iso_date, validate_disease
+from backend.exceptions import DateValidationError, DiseaseValidationError
+from backend.schemas.responses import AlertsResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def validate_iso_date(date_str: Optional[str]) -> Optional[str]:
-    """Validate ISO date format (YYYY-MM-DD)."""
-    if date_str is None:
-        return None
-    try:
-        datetime.fromisoformat(date_str)
-        return date_str
-    except ValueError:
+def _handle_validation_error(e: Exception) -> None:
+    """Convert validation exceptions to HTTP exceptions."""
+    if isinstance(e, (DateValidationError, DiseaseValidationError)):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid date format: '{date_str}'. Expected YYYY-MM-DD.",
+            detail=e.to_dict()
         )
 
 
-@router.post("/generate")
+@router.post("/generate", response_model=AlertsResponse)
 def generate(
     date: Optional[str] = Query(None, description="ISO date YYYY-MM-DD"),
     disease: Optional[str] = Query(None, description="Filter by disease")
@@ -35,16 +33,20 @@ def generate(
     """Generate alerts based on risk scores, optionally filtered by disease."""
     try:
         validated_date = validate_iso_date(date)
-        disease_info = f" for disease: {disease}" if disease else ""
+        validated_disease = validate_disease(disease)
+        
+        disease_info = f" for disease: {validated_disease}" if validated_disease else ""
         logger.info(f"Generating alerts for date: {validated_date or 'latest'}{disease_info}")
         
-        used_date, alerts = generate_alerts(validated_date, disease)
+        used_date, alerts = generate_alerts(validated_date, validated_disease)
         
         logger.info(f"Generated {len(alerts)} alerts for date {used_date}")
         response = {"date": used_date, "alerts": alerts, "count": len(alerts)}
-        if disease:
-            response["disease"] = disease
+        if validated_disease:
+            response["disease"] = validated_disease
         return response
+    except (DateValidationError, DiseaseValidationError) as e:
+        _handle_validation_error(e)
     except HTTPException:
         raise
     except PyMongoError as e:
@@ -61,7 +63,7 @@ def generate(
         )
 
 
-@router.get("/latest")
+@router.get("/latest", response_model=AlertsResponse)
 def latest(
     region_id: Optional[str] = Query(None),
     limit: int = Query(20, ge=1, le=100),
@@ -69,30 +71,32 @@ def latest(
 ):
     """Get latest alerts, optionally filtered by region and/or disease."""
     try:
+        validated_disease = validate_disease(disease)
+        
         db = get_db()
         alerts_col = db["alerts"]
 
         filter_query = {}
-        if disease:
-            filter_query["disease"] = disease
+        if validated_disease:
+            filter_query["disease"] = validated_disease
         
         latest_alert = alerts_col.find_one(filter_query, sort=[("date", DESCENDING)])
         if not latest_alert:
-            logger.warning(f"No alerts found in database{' for disease: ' + disease if disease else ''}")
+            logger.warning(f"No alerts found in database{' for disease: ' + validated_disease if validated_disease else ''}")
             return {"date": None, "alerts": [], "count": 0}
 
         latest_date = latest_alert["date"]
         query = {"date": latest_date}
         if region_id:
-            query["region_id"] = region_id
-        if disease:
-            query["disease"] = disease
+            query["region_id"] = region_id.strip().upper()
+        if validated_disease:
+            query["disease"] = validated_disease
             
         logger_msg = f"Fetching latest {limit} alerts"
         if region_id:
             logger_msg = f"Fetching latest alerts for region: {region_id}"
-        if disease:
-            logger_msg += f" for disease: {disease}"
+        if validated_disease:
+            logger_msg += f" for disease: {validated_disease}"
         logger.info(logger_msg)
 
         docs = list(
@@ -100,6 +104,8 @@ def latest(
         )
         
         return {"date": latest_date, "alerts": docs, "count": len(docs)}
+    except (DateValidationError, DiseaseValidationError) as e:
+        _handle_validation_error(e)
     except PyMongoError as e:
         logger.error(f"Database error fetching latest alerts: {e}")
         raise HTTPException(
