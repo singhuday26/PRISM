@@ -222,7 +222,37 @@ class PipelineResponse(BaseModel):
     date: str = Field(description="Date processed")
     steps: List[PipelineStepResult] = Field(description="Results of each step")
     disease: Optional[str] = Field(default=None, description="Disease processed")
-    duration_seconds: Optional[float] = Field(
-        default=None, 
-        description="Total execution time"
-    )
+
+# ============================================================================
+# Resource Allocation Models (Product A)
+# ============================================================================
+
+class ResourceConfigParams(BaseModel):
+    """Medical parameters for resource calculation."""
+    hospitalization_rate: float = Field(ge=0, le=1, description="Rate of cases requiring hospitalization")
+    icu_rate: float = Field(ge=0, le=1, description="Rate of cases requiring ICU")
+    avg_stay_days: int = Field(ge=1, description="Average length of stay in days")
+    nurse_ratio: float = Field(ge=0, description="Nurses per patient ratio")
+    oxygen_rate: Optional[float] = Field(default=0.1, ge=0, le=1, description="Rate of patients needing oxygen")
+
+class ResourceConfig(BaseModel):
+    """Configuration for a specific disease."""
+    disease: str = Field(description="Disease name (e.g., dengue)")
+    resource_params: ResourceConfigParams = Field(description="Resource calculation parameters")
+
+class ResourceDemand(BaseModel):
+    """Predicted resource requirements."""
+    general_beds: int = Field(ge=0, description="General ward beds needed")
+    icu_beds: int = Field(ge=0, description="ICU beds needed")
+    nurses: int = Field(ge=0, description="Nursing staff needed")
+    oxygen_cylinders: int = Field(ge=0, description="Oxygen cylinders needed per day")
+
+class ResourcePredictionResponse(BaseModel):
+    """Response for resource prediction endpoint."""
+    region_id: str = Field(description="Unique region identifier")
+    date: str = Field(description="Date of prediction")
+    disease: str = Field(description="Disease calculated for")
+    forecasted_cases: int = Field(ge=0, description="Predicted active cases")
+    resources: ResourceDemand = Field(description="Calculated resource demand")
+    shortage_risk: bool = Field(default=False, description="Whether demand exceeds capacity (if known)")
+

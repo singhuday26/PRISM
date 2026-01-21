@@ -1,0 +1,149 @@
+
+import logging
+from typing import Dict, Optional, List
+from datetime import datetime, timedelta, date
+
+from pymongo import DESCENDING
+
+from backend.db import get_db
+from backend.schemas.responses import (
+    ResourceConfig, 
+    ResourceConfigParams, 
+    ResourceDemand, 
+    ResourcePredictionResponse
+)
+from backend.exceptions import DataNotFoundError
+
+logger = logging.getLogger(__name__)
+
+class ResourceService:
+    def __init__(self):
+        self.db = get_db()
+        self.config_col = self.db["disease_config"]
+        self.forecasts_col = self.db["forecasts_daily"]
+
+    def get_config(self, disease: str) -> ResourceConfig:
+        """Get resource configuration for a disease."""
+        doc = self.config_col.find_one({"_id": disease})
+        if not doc:
+            # Return sensible defaults if not found
+            logger.warning(f"No resource config found for {disease}, using defaults")
+            return ResourceConfig(
+                disease=disease,
+                resource_params=ResourceConfigParams(
+                    hospitalization_rate=0.1,
+                    icu_rate=0.01,
+                    avg_stay_days=7,
+                    nurse_ratio=0.1,
+                    oxygen_rate=0.1
+                )
+            )
+        
+        return ResourceConfig(
+            disease=doc["name"], # stored as name in seed, _id is slug
+            resource_params=ResourceConfigParams(**doc["resource_params"])
+        )
+
+    def set_config(self, config: ResourceConfig) -> None:
+        """Update resource configuration."""
+        self.config_col.update_one(
+            {"_id": config.disease.lower()}, # usage slug as ID
+            {
+                "$set": {
+                    "name": config.disease,
+                    "resource_params": config.resource_params.model_dump()
+                }
+            },
+            upsert=True
+        )
+
+    def _estimate_active_cases(
+        self, 
+        region_id: str, 
+        target_date: str, 
+        disease: str, 
+        avg_stay_days: int
+    ) -> int:
+        """
+        Estimate active cases by summing new cases over the last N days (avg_stay_days).
+        Uses forecasts_daily for future dates.
+        """
+        # We need data from (target_date - avg_stay_days) to target_date
+        target_dt = date.fromisoformat(target_date)
+        start_dt = target_dt - timedelta(days=avg_stay_days - 1)
+        start_date = start_dt.isoformat()
+
+        # Fetch forecasts
+        # Note: In a real system, we'd also check 'cases_daily' for historical data 
+        # if the window overlaps with the past. For MVP, assuming we have forecasts coverage.
+        
+        cursor = self.forecasts_col.find({
+            "region_id": region_id,
+            "disease": disease,
+            "date": {"$gte": start_date, "$lte": target_date}
+        })
+        
+        total_new_cases = 0
+        count = 0
+        for doc in cursor:
+            # Use predicted mean
+            total_new_cases += doc.get("pred_mean", 0)
+            count += 1
+            
+        if count == 0:
+            logger.warning(f"No forecast data found for {region_id} {disease} window {start_date} to {target_date}")
+            return 0
+            
+        # Approximation: Active cases ~= Sum of new cases during infection period
+        # This assumes no recovery until end of period, which is a conservative "peak load" estimate.
+        return int(total_new_cases)
+
+    def predict_demand(
+        self, 
+        region_id: str, 
+        target_date: str, 
+        disease: str
+    ) -> ResourcePredictionResponse:
+        """
+        Calculate resource demand based on forecasted cases and disease config.
+        """
+        # 1. Get Config
+        config = self.get_config(disease)
+        params = config.resource_params
+        
+        # 2. Estimate Active Cases
+        active_cases = self._estimate_active_cases(
+            region_id, 
+            target_date, 
+            disease, 
+            params.avg_stay_days
+        )
+        
+        # 3. Apply Multipliers
+        general_beds = int(active_cases * params.hospitalization_rate)
+        icu_beds = int(active_cases * params.icu_rate)
+        # Nurse ratio is per patient (hospitalized), usually. Spec says generic nurse ratio.
+        # Let's assume nurse_ratio is per hospitalized patient.
+        # Spec says: "1 nurse per 10 patients" -> ratio 0.1
+        # Applied to total hospitalized (General + ICU)? Or just General?
+        # Usually ICU needs 1:1 or 1:2. General 1:10.
+        # For MVP, applying simpler logic: Total Hospitalized * nurse_ratio
+        total_hospitalized = general_beds + icu_beds
+        nurses = int(total_hospitalized * params.nurse_ratio)
+        
+        oxygen_cylinders = int(total_hospitalized * params.oxygen_rate)
+
+        # 4. Construct Response
+        return ResourcePredictionResponse(
+            region_id=region_id,
+            date=target_date,
+            disease=disease,
+            forecasted_cases=active_cases,
+            resources=ResourceDemand(
+                general_beds=general_beds,
+                icu_beds=icu_beds,
+                nurses=nurses,
+                oxygen_cylinders=oxygen_cylinders
+            ),
+            shortage_risk=False # Placeholder: would need capacity data to determine
+        )

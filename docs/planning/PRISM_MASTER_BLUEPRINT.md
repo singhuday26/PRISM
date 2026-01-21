@@ -19,6 +19,28 @@ Democratize access to AI-powered disease surveillance and outbreak prediction, e
 
 ---
 
+## 1.2 Dual-Product Strategy
+
+We are building two distinct products on a shared intelligence core:
+
+### 🅰️ Product A: PRISM Command (Priority)
+**"The Air Traffic Control for Disease Outbreaks"**
+- **User**: Health Officers, Hospital Admins, Government Agencies.
+- **Core Value**: Predictive Resource Allocation.
+- **Key Question**: "Where do I send beds/oxygen *before* the crisis?"
+- **Metric**: Response Time Reduction.
+
+### 🅱️ Product B: PRISM Public (Future)
+**"The Weather App for Health"**
+- **User**: Everyday Citizens.
+- **Core Value**: Personal Risk Awareness & Actionable Advice.
+- **Key Question**: "Is it safe for me to go out today?"
+- **Metric**: Daily Active Users (DAU).
+
+> **Current Focus**: strictly **Product A (Command)** to solve the critical "mismanagement" problem first.
+
+---
+
 ## 1.2 Target Users
 
 | User Segment | Pain Points | PRISM Solution |
@@ -156,38 +178,32 @@ PRISM/
 
 # Part 3: Feature Roadmap
 
-## 3.1 Priority Matrix
+## 3.1 Priority Matrix: Focus on PRISM Command
 
 ```mermaid
 graph TB
-    subgraph "P0 - Critical (Next Sprint)"
-        A[Interactive Risk Heatmap]
-        B[Email Alert Notifications]
-        C[PDF Report Generation]
+    subgraph "P0 - Product A Core (Command Center)"
+        A[Resource Allocation Intelligence]
+        B[Admin Dashboard (Command View)]
+        C[Simulation Engine (Realistic Data)]
     end
     
-    subgraph "P1 - High (1-2 Months)"
-        D[Modern React Dashboard]
-        E[News Ingestion Pipeline]
-        F[Enhanced Forecasting Models]
+    subgraph "P1 - Intelligence Layer"
+        D[Interactive Risk Heatmap]
+        E[Enhanced Forecasting (Cases -> Beds)]
+        F[Automated Alerts (Staffing Triggers)]
     end
     
-    subgraph "P2 - Medium (3-6 Months)"
-        G[Social Media Monitoring]
-        H[LLM-powered Insights]
-        I[Mobile App]
-    end
-    
-    subgraph "P3 - Future"
-        J[Wastewater Integration]
-        K[Genomic Data Integration]
-        L[Multi-tenant SaaS]
+    subgraph "P2 - Product B (Public Layer)"
+        G[Public Mobile View]
+        H[Personal Risk Score]
+        I[AQI / Environmental Integration]
     end
     
     A --> D
-    B --> G
-    C --> H
-    D --> I
+    B --> E
+    C --> F
+    D --> G
     E --> H
 ```
 
