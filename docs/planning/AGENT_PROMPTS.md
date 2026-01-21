@@ -120,5 +120,83 @@ mypy backend/
 
 # Start and test API manually
 python -m uvicorn backend.app:app --reload
-# Then visit http://localhost:8000/docs
+
+```
+
+---
+
+## 🎯 Strategic Feature Prompts (PRISM Command)
+
+### [Backend] P0: Resource Intelligence
+
+```
+I'm working on PRISM Command (Product A).
+Context: C:\0001_Project\PRISM
+Spec: docs/planning/FEATURE_RESOURCE_INTELLIGENCE.md
+
+Task: Implement the Resource Allocation Service.
+1. Create `backend/services/resources.py`: Implement the math `Demand = Active_Cases * Rate`.
+2. Create `backend/routes/resources.py`: Endpoints for prediction and config.
+3. Update `backend/schemas/responses.py`: Add ResourceDemand models.
+4. Run `backend/scripts/seed_resources.py` to load medical config.
+5. Verify with `pytest tests/unit/test_resource_service.py`.
+
+Constraint: Ensure accurate math. This is a life-saving feature.
+```
+
+### [Frontend] P0: Command Dashboard
+
+```
+I'm working on PRISM Command (Product A).
+Context: C:\0001_Project\PRISM
+Spec: docs/planning/FEATURE_COMMAND_DASHBOARD.md
+API Spec: docs/planning/FEATURE_RESOURCE_INTELLIGENCE.md
+
+Task: Build the "Mission Control" Frontend.
+1. Scaffold a React+Vite app in `frontend/`.
+2. Install Shadcn UI, Tailwind, Lucide React, Recharts.
+3. Create the "Bed Shortage Widget": 
+   - Fetch data from `POST /resources/predict`
+   - Show big red numbers if demand > capacity.
+4. Use Dark Mode default.
+
+Constraint: Must feel like an "Enterprise Operating System". High contrast, high density.
+```
+
+### [Frontend] P0: Operational Map Widget
+
+```
+I'm working on PRISM Command (Product A).
+Context: C:\0001_Project\PRISM
+Dashboard: frontend/ (already scaffolded with React+Vite+Tailwind)
+API Spec: docs/planning/FEATURE_HEATMAP.md
+
+Task: Add the Operational Map Widget to the Command Dashboard.
+1. Install `react-leaflet` and `leaflet` in `frontend/`.
+2. Create a new component `OperationalMap.tsx`.
+3. Fetch GeoJSON from `GET /risk/geojson`.
+4. Color regions by risk level (Green < 0.3, Yellow < 0.6, Orange < 0.8, Red >= 0.8).
+5. Add click handler to show region details in a popup.
+6. Integrate the map into the main dashboard layout (right panel).
+
+Constraint: Map must be responsive. Use dark-themed tiles (e.g., CartoDB Dark Matter).
+```
+
+### [Backend] P0: Simulation Engine
+
+```
+I'm working on PRISM Command (Product A).
+Context: C:\0001_Project\PRISM
+
+Task: Build a Simulation Engine to generate realistic outbreak data for demos.
+1. Create `backend/scripts/simulate_outbreak.py`.
+2. Logic:
+   - Generate 30 days of synthetic cases for 5 regions.
+   - Use a sinusoidal wave with noise to mimic a realistic outbreak curve.
+   - Peak should vary by region (randomized).
+3. Insert data into `cases_daily` collection.
+4. Re-run `POST /forecasts/generate` to create forecasts from this data.
+5. Re-run `POST /risk/compute` to calculate risk scores.
+
+Constraint: Data must look realistic enough for a faculty demo. No flat lines.
 ```
