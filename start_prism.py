@@ -39,12 +39,24 @@ def main():
     print("   URL: http://localhost:8000")
     print("   Docs: http://localhost:8000/docs")
     
+    # Create logs directory
+    logs_dir = Path(__file__).parent / "logs"
+    logs_dir.mkdir(exist_ok=True)
+    api_log_path = logs_dir / "api_startup.log"
+    
+    print(f"   Writing API logs to: {api_log_path}")
+    api_log = open(api_log_path, "w")
+    
+    cmd = [sys.executable, "-m", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    print(f"   Command: {' '.join(cmd)}")
+    
     # Start API in background
     api_process = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "backend.app:app", "--reload"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd=Path(__file__).parent
+        cmd,
+        stdout=api_log,
+        stderr=subprocess.STDOUT,
+        cwd=Path(__file__).parent,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
     )
     
     print("   ✓ API server starting in background...")
@@ -53,30 +65,39 @@ def main():
     # Actively wait for API to be ready
     import urllib.request
     api_ready = False
-    for attempt in range(20):  # Try for up to 20 seconds
+    for attempt in range(30):  # Try for up to 30 seconds
         try:
-            urllib.request.urlopen("http://localhost:8000/health/ping", timeout=2)
+            urllib.request.urlopen("http://localhost:8000/health", timeout=2)
             api_ready = True
             break
-        except Exception:
+        except Exception as e:
+            if api_process.poll() is not None:
+                print(f"   ❌ API process died with code {api_process.returncode}")
+                break
             time.sleep(1)
             print(f"   ... waiting ({attempt + 1}s)")
     
     if not api_ready:
-        print("   ⚠️ API may not be fully ready, continuing anyway...")
+        print("   ⚠️ API may not be fully ready or failed to start.")
+        print("   Check logs/api_startup.log for details.")
+        response = input("   Continue to dashboard anyway? (y/n): ")
+        if response.lower() != 'y':
+            api_process.terminate()
+            return
     else:
         print("   ✓ API is ready!")
     
-    print("📊 Step 2: Starting Streamlit Dashboard...")
+    print("\n📊 Step 2: Starting Streamlit Dashboard...")
     print("   URL: http://localhost:8501\n")
     
     print("=" * 80)
     print("✅ PRISM is now running!")
     print("=" * 80)
     print("\n🌐 Access URLs:")
-    print("   📊 Dashboard:  http://localhost:8501")
-    print("   🔌 API:        http://localhost:8000")
-    print("   📖 API Docs:   http://localhost:8000/docs")
+    print("   📊 Dashboard:      http://localhost:8501")
+    print("   🔌 API:            http://localhost:8000")
+    print("   📖 API Docs:       http://localhost:8000/docs")
+    print("   🗺️ Heatmap:        http://localhost:8000/ui/heatmap/")
     print("\n⚠️  To stop PRISM:")
     print("   Press Ctrl+C in this window")
     print("=" * 80)
@@ -88,12 +109,14 @@ def main():
             sys.executable, "-m", "streamlit", "run",
             "backend/dashboard/app.py",
             "--server.port=8501",
-            "--server.address=localhost"
+            "--server.address=localhost",
+            "--server.headless=true"
         ])
     except KeyboardInterrupt:
         print("\n\n⏹️  Stopping PRISM...")
         api_process.terminate()
         api_process.wait()
+        api_log.close()
         print("✓ API stopped")
         print("✓ Dashboard stopped")
         print("\nGoodbye! 👋")

@@ -67,6 +67,7 @@ def generate_alerts(target_date: Optional[str] = None, disease: Optional[str] = 
                 "risk_level": rd.get("risk_level"),
                 "reason": f"Risk score {score:.2f} >= threshold {threshold:.2f}",
                 "created_at": datetime.utcnow(),
+                "drivers": rd.get("drivers", []),
             }
             if disease:
                 alert["disease"] = disease
@@ -80,9 +81,11 @@ def generate_alerts(target_date: Optional[str] = None, disease: Optional[str] = 
         alerts.sort(key=lambda x: x.get("risk_score", 0.0), reverse=True)
         logger.info(f"Generated {len(alerts)} alerts")
 
-        # Dispatch notifications to configured channels
+        # Send email notifications for HIGH/CRITICAL alerts
         if alerts:
-            dispatch_notifications(alerts)
+            from backend.services.email import send_alert_notifications
+            sent_count = send_alert_notifications(alerts)
+            logger.info(f"Email notifications sent: {sent_count}")
 
         return target_date, alerts
     except Exception as e:

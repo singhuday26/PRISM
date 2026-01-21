@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header">
+    <h1>{{ title }}</h1>
+    <div class="subtitle">{{ start_date }} to {{ end_date }}</div>
+</div>
+
+<div class="meta">
+    <div class="meta-item"><span class="meta-label">Disease:</span> {{ disease }}</div>
+    <div class="meta-item"><span class="meta-label">Period:</span> {{ start_date }} to {{ end_date }}</div>
+    <div class="meta-item"><span class="meta-label">Generated:</span> {{ generated_at }}</div>
+</div>
+
+<div class="section">
+    <h2>Executive Summary</h2>
+    <ul>
+        <li><strong>{{ high_risk_count }}</strong> regions with HIGH/CRITICAL risk levels</li>
+        <li><strong>{{ alert_count }}</strong> alerts generated in this period</li>
+        <li>Disease focus: <strong>{{ disease }}</strong></li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>Top Risk Regions</h2>
+    {% if risk_scores %}
+    <table>
+        <thead>
+            <tr>
+                <th>Region</th>
+                <th>Disease</th>
+                <th>Risk Score</th>
+                <th>Risk Level</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for risk in risk_scores %}
+            <tr>
+                <td>{{ risk.region_id }}</td>
+                <td>{{ risk.disease or 'N/A' }}</td>
+                <td>{{ "%.3f"|format(risk.risk_score) }}</td>
+                <td>
+                    <span class="risk-badge risk-{{ risk.risk_level|lower }}">
+                        {{ risk.risk_level }}
+                    </span>
+                </td>
+                <td>{{ risk.date }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No risk data available for this period.</p>
+    {% endif %}
+</div>
+
+<div class="section">
+    <h2>Alerts Issued</h2>
+    {% if alerts %}
+    <table>
+        <thead>
+            <tr>
+                <th>Region</th>
+                <th>Risk Level</th>
+                <th>Risk Score</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for alert in alerts %}
+            <tr>
+                <td>{{ alert.region_id }}</td>
+                <td>
+                    <span class="risk-badge risk-{{ alert.risk_level|lower }}">
+                        {{ alert.risk_level }}
+                    </span>
+                </td>
+                <td>{{ "%.3f"|format(alert.risk_score) }}</td>
+                <td>{{ alert.date }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No alerts issued in this period.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -116,6 +116,27 @@ with st.sidebar:
         st.session_state.selected_disease = None
     
     st.markdown("---")
+    st.subheader("🗺️ Navigation")
+    
+    # Link to interactive heatmap
+    heatmap_url = f"{API_URL}/ui/heatmap/"
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        margin-bottom: 1rem;
+    ">
+        <a href="{heatmap_url}" target="_blank" style="
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        ">🗺️ Interactive Risk Heatmap →</a>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
     st.subheader("🚀 Run Full Pipeline")
     st.caption("One-click execution: Risk → Alerts → Forecasts")
     
@@ -129,11 +150,38 @@ with st.sidebar:
     disease_param = st.session_state.selected_disease or "DENGUE"
     
     if st.button("▶️ Run Pipeline", type="primary", use_container_width=True):
+        import time as time_module
+        import threading
+        
         progress_bar = st.progress(0)
         status_text = st.empty()
+        time_display = st.empty()
+        
+        # Get estimated time from session state (default 10s based on previous runs)
+        estimated_time = st.session_state.get('last_pipeline_time', 10)
+        
+        # Start time tracking
+        start_time = time_module.time()
+        stop_timer = threading.Event()
+        
+        def update_timer():
+            """Background thread to update elapsed time display."""
+            while not stop_timer.is_set():
+                elapsed = time_module.time() - start_time
+                remaining = max(0, estimated_time - elapsed)
+                if remaining > 0:
+                    time_display.info(f"⏱️ Elapsed: {elapsed:.1f}s | Estimated remaining: ~{remaining:.0f}s")
+                else:
+                    time_display.info(f"⏱️ Elapsed: {elapsed:.1f}s | Almost done...")
+                time_module.sleep(0.5)
+        
+        # Start timer thread
+        timer_thread = threading.Thread(target=update_timer, daemon=True)
+        timer_thread.start()
         
         try:
-            status_text.info("🚀 Running full pipeline...")
+            # Step 1: Starting
+            status_text.info("🚀 Step 1/3: Computing risk scores...")
             progress_bar.progress(10)
             
             # Build query parameters
@@ -144,12 +192,24 @@ with st.sidebar:
                 "granularity": granularity
             }
             
+            # Update status to show we're calling the API
+            status_text.info("🔄 Step 2/3: Generating alerts & forecasts...")
+            progress_bar.progress(30)
+            
             # Call one-click pipeline endpoint
             pipeline_response = requests.post(
                 f"{API_URL}/pipeline/run",
                 params=params,
-                timeout=600  # Increased to 10 minutes for ARIMA training
+                timeout=600
             )
+            
+            # Stop the timer
+            stop_timer.set()
+            elapsed_time = time_module.time() - start_time
+            
+            # Store this run time for future estimates
+            st.session_state.last_pipeline_time = elapsed_time
+            
             progress_bar.progress(90)
             
             if not pipeline_response.ok:
@@ -157,10 +217,12 @@ with st.sidebar:
                 if pipeline_response.text:
                     st.error(f"Details: {pipeline_response.text}")
                 st.session_state.pipeline_status = "failed"
+                time_display.error(f"⏱️ Failed after {elapsed_time:.1f}s")
             else:
                 result = pipeline_response.json()
                 progress_bar.progress(100)
                 status_text.success("✓ Pipeline completed!")
+                time_display.success(f"⏱️ Completed in {elapsed_time:.1f}s")
                 
                 # Show summary
                 st.success("🎉 Pipeline completed successfully!")
@@ -192,18 +254,25 @@ with st.sidebar:
                 st.rerun()
             
         except requests.Timeout:
+            stop_timer.set()
+            elapsed_time = time_module.time() - start_time
             st.error("⏱️ Pipeline timeout - operations may still be running in background")
+            time_display.error(f"⏱️ Timed out after {elapsed_time:.1f}s")
             st.session_state.pipeline_status = "timeout"
         except requests.ConnectionError:
+            stop_timer.set()
             st.error("🔌 Connection error - is the API server running?")
             st.session_state.pipeline_status = "connection_error"
         except requests.RequestException as e:
+            stop_timer.set()
             st.error(f"❌ Pipeline error: {str(e)}")
             st.session_state.pipeline_status = "error"
         except Exception as e:
+            stop_timer.set()
             st.error(f"❌ Unexpected error: {str(e)}")
             st.session_state.pipeline_status = "error"
         finally:
+            stop_timer.set()
             progress_bar.empty()
             status_text.empty()
 

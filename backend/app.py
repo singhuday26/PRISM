@@ -21,6 +21,9 @@ from .routes.forecasts import router as forecasts_router
 from .routes.evaluation import router as evaluation_router
 from .routes.pipeline import router as pipeline_router
 from .routes.diseases import router as diseases_router
+from .routes.geojson import router as geojson_router
+from .routes.notifications import router as notifications_router
+from .routes.reports import router as reports_router
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +123,9 @@ def create_app() -> FastAPI:
     app.include_router(pipeline_router, prefix="/pipeline", tags=["pipeline"])
     app.include_router(evaluation_router, prefix="/evaluation", tags=["evaluation"])
     app.include_router(diseases_router, tags=["diseases"])
+    app.include_router(geojson_router, prefix="/risk", tags=["geojson"])
+    app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
+    app.include_router(reports_router, prefix="/reports", tags=["reports"])
 
     # Serve frontend static files
     frontend_dir = Path(__file__).resolve().parent.parent / "frontend"

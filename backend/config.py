@@ -24,12 +24,15 @@ class Settings(BaseSettings):
     alert_email_recipients: list[str] = Field([], env="ALERT_EMAIL_RECIPIENTS")
     alert_sms_recipients: list[str] = Field([], env="ALERT_SMS_RECIPIENTS")
     
-    # SMTP Settings (Optional)
-    smtp_server: Optional[str] = Field(None, env="SMTP_SERVER")
+    
+    # SMTP Settings for Email Notifications
+    smtp_host: str = Field("localhost", env="SMTP_HOST")
     smtp_port: int = Field(587, env="SMTP_PORT")
-    smtp_user: Optional[str] = Field(None, env="SMTP_USER")
-    smtp_password: Optional[str] = Field(None, env="SMTP_PASSWORD")
-    smtp_sender: str = Field("alerts@prism-system.local", env="SMTP_SENDER")
+    smtp_user: str = Field("", env="SMTP_USER")
+    smtp_password: str = Field("", env="SMTP_PASSWORD")
+    smtp_from: str = Field("noreply@localhost", env="SMTP_FROM")
+    smtp_from_name: str = Field("PRISM Alerts", env="SMTP_FROM_NAME")
+    api_url: str = Field("http://localhost:8000", env="API_URL")
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
