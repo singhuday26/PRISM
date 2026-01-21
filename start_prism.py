@@ -48,8 +48,24 @@ def main():
     )
     
     print("   ✓ API server starting in background...")
-    print("   ⏳ Waiting for API to be ready (5 seconds)...\n")
-    time.sleep(5)
+    print("   ⏳ Waiting for API to be ready...")
+    
+    # Actively wait for API to be ready
+    import urllib.request
+    api_ready = False
+    for attempt in range(20):  # Try for up to 20 seconds
+        try:
+            urllib.request.urlopen("http://localhost:8000/health/ping", timeout=2)
+            api_ready = True
+            break
+        except Exception:
+            time.sleep(1)
+            print(f"   ... waiting ({attempt + 1}s)")
+    
+    if not api_ready:
+        print("   ⚠️ API may not be fully ready, continuing anyway...")
+    else:
+        print("   ✓ API is ready!")
     
     print("📊 Step 2: Starting Streamlit Dashboard...")
     print("   URL: http://localhost:8501\n")

@@ -2,12 +2,48 @@ import os
 import requests
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
+import warnings
+
+# Suppress warnings to keep logs clean
+warnings.filterwarnings("ignore")
+
+# Import Plotly and custom components
+try:
+    import plotly.express as px
+    import plotly.graph_objects as go
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    PLOTLY_AVAILABLE = False
+
+# Import custom theme
+try:
+    from .theme import PRISM_THEME_CSS, CHART_COLORS, get_risk_color
+    from .charts import (
+        create_risk_heatmap, 
+        create_forecast_chart, 
+        create_model_comparison_chart,
+        create_hotspot_treemap,
+    )
+    CUSTOM_COMPONENTS = True
+except ImportError:
+    CUSTOM_COMPONENTS = False
+    PRISM_THEME_CSS = ""
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
-st.set_page_config(page_title="PRISM Dashboard", layout="wide")
+# Page configuration with modern settings
+st.set_page_config(
+    page_title="PRISM Dashboard", 
+    page_icon="🔬",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# Apply custom theme
+if PRISM_THEME_CSS:
+    st.markdown(PRISM_THEME_CSS, unsafe_allow_html=True)
+
 st.title("🔬 PRISM: Predictive Risk Intelligence & Surveillance Model")
 
 # Initialize session state
@@ -15,6 +51,35 @@ if 'pipeline_status' not in st.session_state:
     st.session_state.pipeline_status = None
 if 'selected_disease' not in st.session_state:
     st.session_state.selected_disease = None
+if 'selected_granularity' not in st.session_state:
+    st.session_state.selected_granularity = "monthly"
+if 'api_healthy' not in st.session_state:
+    st.session_state.api_healthy = False
+
+# Check API health on startup
+def check_api_health():
+    """Check if API is reachable and healthy."""
+    import time
+    for attempt in range(3):
+        try:
+            resp = requests.get(f"{API_URL}/health/ping", timeout=10)
+            if resp.ok:
+                return True
+        except Exception:
+            pass
+        if attempt < 2:
+            time.sleep(2)
+    return False
+
+if not st.session_state.api_healthy:
+    with st.spinner("Connecting to API..."):
+        st.session_state.api_healthy = check_api_health()
+
+if not st.session_state.api_healthy:
+    st.error("❌ Cannot connect to API. Please ensure the API server is running.")
+    st.info(f"Expected API at: {API_URL}")
+    st.info("Start the API with: `python -m uvicorn backend.app:app --reload`")
+    st.stop()
 
 # Sidebar with controls
 with st.sidebar:
@@ -26,7 +91,7 @@ with st.sidebar:
     
     # Fetch available diseases
     try:
-        diseases_resp = requests.get(f"{API_URL}/regions/diseases", timeout=5)
+        diseases_resp = requests.get(f"{API_URL}/regions/diseases", timeout=30)
         if diseases_resp.ok:
             diseases_data = diseases_resp.json()
             available_diseases = ["All Diseases"] + diseases_data.get("diseases", [])
@@ -83,7 +148,7 @@ with st.sidebar:
             pipeline_response = requests.post(
                 f"{API_URL}/pipeline/run",
                 params=params,
-                timeout=120
+                timeout=600  # Increased to 10 minutes for ARIMA training
             )
             progress_bar.progress(90)
             
@@ -155,7 +220,7 @@ st.header("🔥 Hotspots")
 st.caption("Regions with highest confirmed case counts")
 
 try:
-    hotspot_resp = requests.get(f"{API_URL}/hotspots{disease_query_param}", timeout=10)
+    hotspot_resp = requests.get(f"{API_URL}/hotspots{disease_query_param}", timeout=30)
     if hotspot_resp.ok:
         data = hotspot_resp.json()
         hotspots = data.get("hotspots", [])
@@ -188,7 +253,7 @@ st.header("🗺️ Risk Heatmap / Top Hotspots")
 st.caption("Top 10 regions ranked by risk score")
 
 try:
-    risk_heatmap_resp = requests.get(f"{API_URL}/risk/latest{disease_query_param}", timeout=10)
+    risk_heatmap_resp = requests.get(f"{API_URL}/risk/latest{disease_query_param}", timeout=30)
     if risk_heatmap_resp.ok:
         data = risk_heatmap_resp.json()
         risk_scores = data.get("risk_scores", [])
@@ -202,39 +267,23 @@ try:
             if top_10:
                 st.info(f"📅 Risk assessment for: {risk_date} | Showing top {len(top_10)} regions")
                 
-                # Prepare data for chart and table
-                regions = [r.get("region_id", "Unknown") for r in top_10]
-                scores = [r.get("risk_score", 0) for r in top_10]
-                
-                # Create bar chart
-                fig, ax = plt.subplots(figsize=(10, 6))
-                bars = ax.barh(regions, scores, color='#FF6B6B')
-                
-                # Color bars by risk level
-                for i, (bar, risk_item) in enumerate(zip(bars, top_10)):
-                    risk_level = risk_item.get("risk_level", "").upper()
-                    if risk_level == "HIGH":
-                        bar.set_color('#FF4757')
-                    elif risk_level == "MEDIUM":
-                        bar.set_color('#FFA502')
-                    else:
-                        bar.set_color('#26DE81')
-                
-                ax.set_xlabel("Risk Score", fontsize=12)
-                ax.set_ylabel("Region", fontsize=12)
-                ax.set_title(f"Top {len(top_10)} Regions by Risk Score", fontsize=14, fontweight='bold')
-                ax.set_xlim(0, 1.0)
-                ax.grid(axis='x', alpha=0.3)
-                
-                # Add value labels on bars
-                for i, (bar, score) in enumerate(zip(bars, scores)):
-                    width = bar.get_width()
-                    ax.text(width + 0.02, bar.get_y() + bar.get_height()/2, 
-                           f'{score:.3f}', 
-                           ha='left', va='center', fontsize=10, fontweight='bold')
-                
-                plt.tight_layout()
-                st.pyplot(fig)
+                # Use Plotly if available, otherwise fallback
+                if PLOTLY_AVAILABLE and CUSTOM_COMPONENTS:
+                    fig = create_risk_heatmap(top_10, f"Top {len(top_10)} Regions by Risk Score")
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    # Fallback to simple bar display
+                    import matplotlib.pyplot as plt
+                    regions = [r.get("region_id", "Unknown") for r in top_10]
+                    scores = [r.get("risk_score", 0) for r in top_10]
+                    
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    bars = ax.barh(regions, scores, color='#667eea')
+                    ax.set_xlabel("Risk Score")
+                    ax.set_xlim(0, 1.0)
+                    ax.grid(axis='x', alpha=0.3)
+                    plt.tight_layout()
+                    st.pyplot(fig)
                 
                 # Create detailed table
                 st.subheader("📋 Risk Details")
@@ -286,7 +335,7 @@ st.header("📊 Risk Intelligence")
 st.caption("Risk scores and drivers for all regions")
 
 try:
-    risk_resp = requests.get(f"{API_URL}/risk/latest{disease_query_param}", timeout=10)
+    risk_resp = requests.get(f"{API_URL}/risk/latest{disease_query_param}", timeout=30)
     if risk_resp.ok:
         data = risk_resp.json()
         risk_scores = data.get("risk_scores", [])
@@ -345,7 +394,7 @@ st.header("🚨 Alerts Feed")
 st.caption("Latest high-risk alerts from early warning system (limit: 20)")
 
 try:
-    alerts_resp = requests.get(f"{API_URL}/alerts/latest?limit=20{'' if not disease_filter else '&disease=' + disease_filter}", timeout=10)
+    alerts_resp = requests.get(f"{API_URL}/alerts/latest?limit=20{'' if not disease_filter else '&disease=' + disease_filter}", timeout=30)
     if alerts_resp.ok:
         data = alerts_resp.json()
         alerts = data.get("alerts", [])
@@ -382,7 +431,7 @@ try:
                 if disease_filter:
                     export_url += f"&disease={disease_filter}"
                 
-                export_resp = requests.get(export_url, timeout=10)
+                export_resp = requests.get(export_url, timeout=60)
                 if export_resp.ok:
                     export_data = export_resp.json()
                     export_alerts = export_data.get("alerts", [])
@@ -444,7 +493,7 @@ st.caption("7-day forecast with prediction bounds")
 
 try:
     # Get regions for dropdown (filtered by disease)
-    regions_resp = requests.get(f"{API_URL}/regions{disease_query_param}", timeout=10)
+    regions_resp = requests.get(f"{API_URL}/regions{disease_query_param}", timeout=30)
     region_options = []
     
     if regions_resp.ok:
@@ -459,7 +508,7 @@ try:
             if disease_filter:
                 forecast_url += f"&disease={disease_filter}"
             
-            forecast_resp = requests.get(forecast_url, timeout=10)
+            forecast_resp = requests.get(forecast_url, timeout=60)
             
             if forecast_resp.ok:
                 data = forecast_resp.json()
@@ -469,36 +518,26 @@ try:
                     forecast_df = pd.DataFrame(forecasts)
                     forecast_df["date"] = pd.to_datetime(forecast_df["date"])
                     
-                    # Create forecast plot
-                    fig, ax = plt.subplots(figsize=(10, 5))
-                    
-                    ax.plot(
-                        forecast_df["date"], 
-                        forecast_df["pred_mean"], 
-                        label="Predicted Mean", 
-                        color="blue", 
-                        marker="o", 
-                        linewidth=2
-                    )
-                    
-                    ax.fill_between(
-                        forecast_df["date"], 
-                        forecast_df["pred_lower"], 
-                        forecast_df["pred_upper"], 
-                        alpha=0.3, 
-                        color="lightblue", 
-                        label="Uncertainty Bounds"
-                    )
-                    
-                    ax.set_xlabel("Date")
-                    ax.set_ylabel("Predicted Confirmed Cases")
-                    ax.set_title(f"7-Day Forecast for {selected_region}")
-                    ax.legend()
-                    ax.grid(True, alpha=0.3)
-                    plt.xticks(rotation=45)
-                    plt.tight_layout()
-                    
-                    st.pyplot(fig)
+                    # Create forecast plot with Plotly
+                    if PLOTLY_AVAILABLE and CUSTOM_COMPONENTS:
+                        fig = create_forecast_chart(forecasts, selected_region)
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        # Fallback to matplotlib
+                        import matplotlib.pyplot as plt
+                        fig, ax = plt.subplots(figsize=(10, 5))
+                        ax.plot(forecast_df["date"], forecast_df["pred_mean"], 
+                                label="Predicted", color="#667eea", marker="o", linewidth=2)
+                        ax.fill_between(forecast_df["date"], forecast_df["pred_lower"], 
+                                       forecast_df["pred_upper"], alpha=0.2, color="#667eea")
+                        ax.set_xlabel("Date")
+                        ax.set_ylabel("Predicted Cases")
+                        ax.set_title(f"7-Day Forecast for {selected_region}")
+                        ax.legend()
+                        ax.grid(True, alpha=0.3)
+                        plt.xticks(rotation=45)
+                        plt.tight_layout()
+                        st.pyplot(fig)
                     
                     # Show forecast data table
                     with st.expander("📋 View Forecast Data"):
@@ -533,7 +572,7 @@ try:
                     try:
                         eval_resp = requests.get(
                             f"{API_URL}/evaluation/forecast?region_id={selected_region}&horizon=7",
-                            timeout=10
+                            timeout=60
                         )
                         
                         if eval_resp.ok:

@@ -7,7 +7,7 @@ from pymongo.errors import PyMongoError
 from backend.db import get_db, ensure_indexes
 from backend.services.risk import compute_risk_scores
 from backend.services.alerts import generate_alerts
-from backend.services.forecasting import generate_forecasts
+from backend.services.arima_forecasting import generate_arima_forecasts
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -68,7 +68,7 @@ def run_full_pipeline(
         
         # Step 4: Generate forecasts
         logger.info(f"Step 3/3: Generating forecasts for disease={disease}, horizon={horizon}, granularity={granularity}")
-        forecast_date, forecast_results = generate_forecasts(
+        forecast_date, forecast_results = generate_arima_forecasts(
             target_date=None, 
             horizon=horizon, 
             disease=disease,

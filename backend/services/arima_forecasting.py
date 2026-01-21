@@ -83,7 +83,7 @@ def _fit_arima_model(
             error_action='ignore',
             suppress_warnings=True,
             stepwise=True,
-            n_fits=10,  # Limit fits for speed
+            n_fits=5,  # Reduced from 10 to 5 for speed
         )
         
         logger.debug(f"Fitted ARIMA model: {model.order}")
@@ -317,20 +317,24 @@ def generate_arima_forecasts(
         failed = 0
         
         for region in regions:
-            region_id = region["region_id"]
-            forecasts = generate_arima_forecast(
-                region_id=region_id,
-                target_date=resolved_date,
-                horizon=horizon,
-                run_ts=run_ts,
-                disease=disease,
-                granularity=granularity,
-                use_seasonal=use_seasonal,
-            )
-            if forecasts:
-                results.extend(forecasts)
-                successful += 1
-            else:
+            try:
+                region_id = region["region_id"]
+                forecasts = generate_arima_forecast(
+                    region_id=region_id,
+                    target_date=resolved_date,
+                    horizon=horizon,
+                    run_ts=run_ts,
+                    disease=disease,
+                    granularity=granularity,
+                    use_seasonal=use_seasonal,
+                )
+                if forecasts:
+                    results.extend(forecasts)
+                    successful += 1
+                else:
+                    failed += 1
+            except Exception as e:
+                logger.error(f"Failed to generate ARIMA forecast for region {region.get('region_id')}: {e}")
                 failed += 1
         
         logger.info(
