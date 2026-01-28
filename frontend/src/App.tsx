@@ -1,159 +1,25 @@
-import { Suspense, lazy } from "react";
-import {
-  LayoutDashboard,
-  BarChart3,
-  Package,
-  FileText,
-  Settings,
-  AlertTriangle,
-  Bell,
-} from "lucide-react";
-import { BedShortageWidget } from "./components/BedShortageWidget";
-
-// Lazy load the map component to prevent SSR/hydration issues
-const OperationalMap = lazy(() =>
-  import("./components/OperationalMap").then((m) => ({
-    default: m.OperationalMap,
-  })),
-);
-
-function MapLoading() {
-  return (
-    <div className="h-[500px] glass-card flex items-center justify-center bg-[hsl(240,10%,6%)] border border-white/10 rounded-lg">
-      <div className="text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-gray-400 text-sm">Loading map component...</p>
-      </div>
-    </div>
-  );
-}
-
-function Sidebar() {
-  const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", active: true },
-    { icon: BarChart3, label: "Analysis", active: false },
-    { icon: Package, label: "Resources", active: false },
-    { icon: FileText, label: "Reports", active: false },
-    { icon: Settings, label: "Settings", active: false },
-  ];
-
-  return (
-    <aside className="w-64 bg-[hsl(240,10%,5%)] border-r border-white/10 flex flex-col">
-      {/* Logo */}
-      <div className="p-6 border-b border-white/10">
-        <h1 className="text-xl font-bold tracking-tight">
-          <span className="text-blue-400">PRISM</span>
-          <span className="text-gray-400 font-normal ml-2">COMMAND</span>
-        </h1>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-1">
-          {navItems.map(({ icon: Icon, label, active }) => (
-            <li key={label}>
-              <a
-                href="#"
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                    : "text-gray-400 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                {label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-white/10 text-xs text-gray-500">
-        v1.0.0 — Mission Control
-      </div>
-    </aside>
-  );
-}
-
-function Header() {
-  return (
-    <header className="h-16 bg-[hsl(240,10%,5%)] border-b border-white/10 flex items-center justify-between px-6">
-      {/* Alert Banner */}
-      <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30">
-        <AlertTriangle className="w-4 h-4 text-red-400" />
-        <span className="text-sm text-red-400 font-medium">
-          ALERT: Resource shortage predicted in Zone 4
-        </span>
-      </div>
-
-      {/* User Menu */}
-      <div className="flex items-center gap-4">
-        <button className="p-2 rounded-lg hover:bg-white/5 transition-colors relative">
-          <Bell className="w-5 h-5 text-gray-400" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-sm font-medium text-blue-400">
-            A
-          </div>
-          <span className="text-sm text-gray-300">Admin</span>
-        </div>
-      </div>
-    </header>
-  );
-}
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Layout } from "./components/layout/Layout";
+import { Dashboard } from "./pages/Dashboard";
+import { Analysis } from "./pages/Analysis";
+import { Resources } from "./pages/Resources";
+import { Reports } from "./pages/Reports";
+import { Settings } from "./pages/Settings";
 
 function App() {
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        width: "100%",
-        backgroundColor: "#0f172a",
-      }}
-    >
-      <Sidebar />
-
-      <div className="flex-1 flex flex-col">
-        <Header />
-
-        <main className="flex-1 p-6 overflow-auto">
-          {/* Page Title */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-white mb-2">
-              Mission Control
-            </h1>
-            <p className="text-gray-400">
-              Real-time resource allocation and outbreak monitoring
-            </p>
-          </div>
-
-          {/* Critical Metrics Section */}
-          <section className="mb-8">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
-              Critical Metrics
-            </h2>
-            <BedShortageWidget
-              regionId="IN-MH"
-              disease="DENGUE"
-              capacityThreshold={100}
-            />
-          </section>
-
-          {/* Operational Map Section */}
-          <section>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
-              Operational Map
-            </h2>
-            <Suspense fallback={<MapLoading />}>
-              <OperationalMap disease="DENGUE" />
-            </Suspense>
-          </section>
-        </main>
-      </div>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="analysis" element={<Analysis />} />
+          <Route path="resources" element={<Resources />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
