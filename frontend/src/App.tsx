@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import {
   LayoutDashboard,
   BarChart3,
@@ -5,17 +6,35 @@ import {
   FileText,
   Settings,
   AlertTriangle,
-  Bell
-} from 'lucide-react';
-import { BedShortageWidget } from './components/BedShortageWidget';
+  Bell,
+} from "lucide-react";
+import { BedShortageWidget } from "./components/BedShortageWidget";
+
+// Lazy load the map component to prevent SSR/hydration issues
+const OperationalMap = lazy(() =>
+  import("./components/OperationalMap").then((m) => ({
+    default: m.OperationalMap,
+  })),
+);
+
+function MapLoading() {
+  return (
+    <div className="h-[500px] glass-card flex items-center justify-center bg-[hsl(240,10%,6%)] border border-white/10 rounded-lg">
+      <div className="text-center">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p className="text-gray-400 text-sm">Loading map component...</p>
+      </div>
+    </div>
+  );
+}
 
 function Sidebar() {
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', active: true },
-    { icon: BarChart3, label: 'Analysis', active: false },
-    { icon: Package, label: 'Resources', active: false },
-    { icon: FileText, label: 'Reports', active: false },
-    { icon: Settings, label: 'Settings', active: false },
+    { icon: LayoutDashboard, label: "Dashboard", active: true },
+    { icon: BarChart3, label: "Analysis", active: false },
+    { icon: Package, label: "Resources", active: false },
+    { icon: FileText, label: "Reports", active: false },
+    { icon: Settings, label: "Settings", active: false },
   ];
 
   return (
@@ -35,10 +54,11 @@ function Sidebar() {
             <li key={label}>
               <a
                 href="#"
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${active
-                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                }`}
               >
                 <Icon className="w-5 h-5" />
                 {label}
@@ -86,7 +106,14 @@ function Header() {
 
 function App() {
   return (
-    <div className="flex min-h-screen w-full">
+    <div
+      style={{
+        display: "flex",
+        minHeight: "100vh",
+        width: "100%",
+        backgroundColor: "#0f172a",
+      }}
+    >
       <Sidebar />
 
       <div className="flex-1 flex flex-col">
@@ -110,22 +137,19 @@ function App() {
             </h2>
             <BedShortageWidget
               regionId="IN-MH"
-              disease="dengue"
+              disease="DENGUE"
               capacityThreshold={100}
             />
           </section>
 
-          {/* Placeholder for Map */}
+          {/* Operational Map Section */}
           <section>
             <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
               Operational Map
             </h2>
-            <div className="glass-card h-[400px] flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>Map visualization coming soon</p>
-              </div>
-            </div>
+            <Suspense fallback={<MapLoading />}>
+              <OperationalMap disease="DENGUE" />
+            </Suspense>
           </section>
         </main>
       </div>

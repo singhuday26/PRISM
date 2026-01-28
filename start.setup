@@ -1,0 +1,389 @@
+═══════════════════════════════════════════════════════════════════════════════
+  PRISM - Predictive Resource Intelligence for Strategic Management
+  Quick Setup & Start Guide
+═══════════════════════════════════════════════════════════════════════════════
+
+📋 PREREQUISITES
+═══════════════════════════════════════════════════════════════════════════════
+✓ Python 3.9+ (via Anaconda/Miniconda)
+✓ Node.js 18+ and npm
+✓ MongoDB 6.0+ (running locally or remote)
+✓ Git
+✓ Windows PowerShell / Linux Bash / macOS Terminal
+
+═══════════════════════════════════════════════════════════════════════════════
+⚡ QUICK START (For Returning Users)
+═══════════════════════════════════════════════════════════════════════════════
+
+# 1. Activate Environment
+# Windows PowerShell (if conda initialized):
+conda activate C:\0001_Project\PRISM\.conda
+
+# Windows PowerShell (alternative - always works):
+C:\Users\singh\anaconda3\Scripts\activate.bat C:\0001_Project\PRISM\.conda
+
+# OR use conda hook:
+& (C:\Users\singh\anaconda3\shell\condabin\conda-hook.ps1) ; conda activate C:\0001_Project\PRISM\.conda
+
+# Linux/Mac:
+conda activate ./conda
+
+# 2. Start MongoDB (if local)
+# Windows: net start MongoDB
+# Linux/Mac: sudo systemctl start mongod
+
+# 3. Start Backend (Terminal 1)
+python start_backend.py
+
+# 4. Start Frontend (Terminal 2)
+cd frontend
+npm run dev
+
+# 5. Access Application
+# Frontend: http://localhost:5173
+# Backend API: http://localhost:8000
+# Dashboard: http://localhost:8050
+
+═══════════════════════════════════════════════════════════════════════════════
+🔧 FIRST-TIME SETUP
+═══════════════════════════════════════════════════════════════════════════════
+
+STEP 1: Clone Repository
+───────────────────────────────────────────────────────────────────────────────
+git clone https://github.com/singhuday26/PRISM.git
+cd PRISM
+
+STEP 2: Create Python Environment
+───────────────────────────────────────────────────────────────────────────────
+# Windows PowerShell: Initialize conda first (if not done)
+# If "conda is not recognized", use full path:
+C:\Users\singh\anaconda3\Scripts\conda.exe init powershell
+# Restart PowerShell after running init
+
+# Create conda environment in project directory
+# Use full path if conda not in PATH:
+C:\Users\singh\anaconda3\Scripts\conda.exe create -p ./.conda python=3.11 -y
+
+# Activate environment:
+# Windows PowerShell:
+conda activate C:\0001_Project\PRISM\.conda
+# OR: & (C:\Users\singh\anaconda3\shell\condabin\conda-hook.ps1) ; conda activate C:\0001_Project\PRISM\.conda
+
+# Linux/Mac:
+conda activate ./.conda
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+STEP 3: Setup MongoDB
+───────────────────────────────────────────────────────────────────────────────
+# Option A: Local MongoDB
+# Download from: https://www.mongodb.com/try/download/community
+# Install and start service
+
+# Option B: MongoDB Atlas (Cloud)
+# 1. Create account at https://www.mongodb.com/cloud/atlas
+# 2. Create cluster and get connection string
+# 3. Update MONGODB_URI in backend/config.py
+
+# Verify MongoDB installation and connection:
+# Modern MongoDB (5.0+) uses mongosh instead of mongo:
+mongosh --eval "db.version()"
+
+# For older MongoDB versions:
+mongo --eval "db.version()"
+
+# Windows: Check if MongoDB service is running:
+Get-Service MongoDB
+# Or: sc query MongoDB
+
+# Windows: Check MongoDB process:
+Get-Process mongod -ErrorAction SilentlyContinue
+
+# Test connection with Python (works if MongoDB is running):
+python -c "from pymongo import MongoClient; print(MongoClient('mongodb://localhost:27017').server_info()['version'])"
+
+STEP 4: Configure Environment
+───────────────────────────────────────────────────────────────────────────────
+# Create .env file (optional)
+# Copy .env.example if exists, or manually set:
+# MONGODB_URI=mongodb://localhost:27017/prism
+# FLASK_ENV=development
+
+STEP 5: Initialize Database
+───────────────────────────────────────────────────────────────────────────────
+# Seed initial data (regions, resources, synthetic data)
+python prism_seed.py
+
+# Or use specific seed scripts
+python backend/scripts/seed.py
+
+STEP 6: Setup Frontend
+───────────────────────────────────────────────────────────────────────────────
+cd frontend
+
+# Install dependencies
+npm install
+
+# Return to root
+cd ..
+
+STEP 7: Create Indexes (Performance Optimization)
+───────────────────────────────────────────────────────────────────────────────
+python backend/scripts/create_indexes.py
+
+═══════════════════════════════════════════════════════════════════════════════
+🚀 RUNNING THE APPLICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+METHOD 1: Individual Components
+───────────────────────────────────────────────────────────────────────────────
+# Terminal 1: Backend API
+# Windows PowerShell:
+& (C:\Users\singh\anaconda3\shell\condabin\conda-hook.ps1) ; conda activate C:\0001_Project\PRISM\.conda
+python start_backend.py
+# → http://localhost:8000
+
+# Terminal 2: Dashboard (Plotly Dash)
+# Windows PowerShell:
+& (C:\Users\singh\anaconda3\shell\condabin\conda-hook.ps1) ; conda activate C:\0001_Project\PRISM\.conda
+python run_dashboard.py
+# → http://localhost:8050
+
+# Terminal 3: Frontend (React)
+cd frontend
+npm run dev
+# → http://localhost:5173
+
+# Note: Linux/Mac users can use: conda activate ./.conda
+
+METHOD 2: All-in-One Start Script
+───────────────────────────────────────────────────────────────────────────────
+python start_prism.py
+# Starts all services in one command
+
+═══════════════════════════════════════════════════════════════════════════════
+🧪 TESTING & VERIFICATION
+═══════════════════════════════════════════════════════════════════════════════
+
+# Run all tests
+pytest
+
+# Run specific test suites
+pytest tests/unit/
+pytest tests/integration/
+pytest test_pipeline_endpoint.py
+
+# Check backend health
+curl http://localhost:8000/health
+
+# Verify frontend build
+cd frontend
+npm run build
+
+═══════════════════════════════════════════════════════════════════════════════
+📊 DATA OPERATIONS
+═══════════════════════════════════════════════════════════════════════════════
+
+# Load disease-specific data
+python backend/scripts/load_dengue_data.py
+python backend/scripts/load_covid_data.py
+python backend/scripts/load_multi_disease.py
+
+# Generate synthetic data
+python backend/scripts/generate_synthetic_dengue.py
+
+# Load CSV data
+python backend/scripts/load_csv.py --file Datasets/Dengue_STATEWISE_DEATH_3yrs.csv
+
+# Recompute risk scores
+python backend/scripts/recompute_risk.py
+
+# Simulate outbreak scenario
+python backend/scripts/simulate_outbreak.py
+
+═══════════════════════════════════════════════════════════════════════════════
+🔍 USEFUL COMMANDS
+═══════════════════════════════════════════════════════════════════════════════
+
+# Check progress
+python check_progress.py
+
+# View results
+python view_results.py
+
+# Verify dengue data
+python verify_dengue.py
+
+# Run pipeline
+python run_pipeline.py
+
+# Run E2E tests
+python test_alerts_e2e.py
+python test_climate_boost.py
+python test_csv_export.py
+python test_disease_agnostic.py
+python test_forecast_api.py
+python test_multi_disease.py
+python test_risk_heatmap.py
+
+═══════════════════════════════════════════════════════════════════════════════
+📁 PROJECT STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+PRISM/
+├── backend/                # Flask/FastAPI backend
+│   ├── app.py             # Main application
+│   ├── routes/            # API endpoints
+│   ├── services/          # Business logic
+│   ├── schemas/           # Data models
+│   └── scripts/           # Utility scripts
+├── frontend/              # React + TypeScript + Vite
+│   ├── src/
+│   │   ├── components/    # React components
+│   │   ├── lib/          # API client
+│   │   └── App.tsx       # Main app
+│   └── package.json
+├── tests/                 # Test suites
+├── Datasets/              # Data files
+├── docs/                  # Documentation
+├── requirements.txt       # Python dependencies
+└── start.setup           # This file
+
+═══════════════════════════════════════════════════════════════════════════════
+🌐 APPLICATION URLS
+═══════════════════════════════════════════════════════════════════════════════
+Frontend (React):         http://localhost:5173
+Backend API:              http://localhost:8000
+API Documentation:        http://localhost:8000/docs
+Dashboard (Plotly):       http://localhost:8050
+MongoDB:                  mongodb://localhost:27017
+
+═══════════════════════════════════════════════════════════════════════════════
+🛠️ TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Issue: "Module not found" or "ImportError" (missing Python packages)
+→ Make sure conda environment is activated first!
+→ Install all dependencies:
+  pip install -r requirements.txt
+→ Common missing packages (install if needed):
+  pip install email-validator matplotlib seaborn reportlab jinja2
+→ Frontend dependencies:
+  cd frontend && npm install
+→ Verify installation:
+  pip list | findstr email-validator
+
+Issue: "mongo is not recognized" or "mongosh is not recognized"
+→ Windows: MongoDB may not be in PATH. Try:
+  # Check if MongoDB service is running:
+  Get-Service MongoDB
+  # Start MongoDB service:
+  net start MongoDB
+  # Or use MongoDB Compass GUI to verify installation
+
+→ Modern MongoDB (5.0+): Use mongosh instead of mongo
+  # Install MongoDB Shell: https://www.mongodb.com/try/download/shell
+
+→ Verify with Python (if pymongo installed):
+  python -c "from pymongo import MongoClient; print(MongoClient().server_info())"
+
+Issue: "MongoDB connection failed"
+→ Verify MongoDB is running:
+  # Windows: Get-Service MongoDB
+  # Linux/Mac: sudo systemctl status mongod
+→ Check connection string in backend/config.py
+→ Default connection: mongodb://localhost:27017
+→ Try MongoDB Compass to test connection visually
+
+Issue: "Port already in use"
+→ Backend: Change PORT in backend/config.py
+→ Frontend: Change port in frontend/vite.config.ts
+→ Kill process: netstat -ano | findstr :8000 (Windows)
+
+Issue: "CORS errors in browser"
+→ Check backend/app.py CORS configuration
+→ Ensure frontend proxy is configured in vite.config.ts
+
+Issue: Frontend not showing data
+→ Verify backend is running on http://localhost:8000
+→ Check browser console for errors
+→ Verify API endpoints with curl or Postman
+
+Issue: "conda is not recognized" (Windows PowerShell)
+→ Option 1: Initialize conda for PowerShell (one-time setup - RECOMMENDED):
+  # Use full path to conda.exe:
+  C:\Users\singh\anaconda3\Scripts\conda.exe init powershell
+  # Then RESTART PowerShell and use: conda activate C:\0001_Project\PRISM\.conda
+
+→ Option 2: Use conda hook directly (no installation needed):
+  & (C:\Users\singh\anaconda3\shell\condabin\conda-hook.ps1) ; conda activate C:\0001_Project\PRISM\.conda
+  # This is what you see working in your terminal history!
+
+→ Option 3: Use activate.bat:
+  C:\Users\singh\anaconda3\Scripts\activate.bat C:\0001_Project\PRISM\.conda
+
+→ Option 4: Use Anaconda Prompt instead of PowerShell
+  # Conda works out-of-the-box in Anaconda Prompt (no PATH issues)
+
+→ Option 5: Add conda to PATH manually:
+  # Add to system PATH: C:\Users\singh\anaconda3\Scripts
+  # Add to system PATH: C:\Users\singh\anaconda3\condabin
+  # Then restart PowerShell
+
+Issue: Conda environment not activating (general)
+→ Use full path: conda activate C:\0001_Project\PRISM\.conda
+→ Linux/Mac: conda activate ./.conda
+→ Verify conda installation: conda --version
+
+═══════════════════════════════════════════════════════════════════════════════
+📚 DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════════════
+README.md                 - Project overview
+QUICKSTART.md            - Quick start guide
+DEVELOPMENT.md           - Development guidelines
+docs/WEB_INTERFACE_GUIDE.md        - Frontend guide
+docs/MULTI_DISEASE_GUIDE.md        - Multi-disease setup
+docs/CLIMATE_BOOST_QUICKSTART.md   - Climate features
+docs/FEATURE_8_ONE_CLICK_PIPELINE.md - Pipeline usage
+docs/FEATURE_9_RISK_HEATMAP.md     - Heatmap features
+docs/FEATURE_10_CSV_EXPORT.md      - Data export
+
+═══════════════════════════════════════════════════════════════════════════════
+💡 TIPS
+═══════════════════════════════════════════════════════════════════════════════
+• Keep MongoDB running in the background
+• Use separate terminals for backend/frontend during development
+• Check logs/ directory for error logs
+• Use generated_reports/ for exported reports
+• Frontend hot-reloads on file changes (HMR enabled)
+• Backend may need restart after code changes
+• Run tests before committing code
+• Check PROJECT_STATUS_REPORT.md for current status
+
+Windows-Specific Tips:
+• Use Anaconda Prompt for easier conda management (no initialization needed)
+• If using PowerShell, run 'conda init powershell' once, then restart
+• Or use the conda hook command for each session (see Quick Start)
+• Git Bash also works well with conda
+
+═══════════════════════════════════════════════════════════════════════════════
+🔐 SECURITY NOTES
+═══════════════════════════════════════════════════════════════════════════════
+• Never commit .env files with credentials
+• Use MongoDB authentication in production
+• Review SECURITY.md for best practices
+• Keep dependencies updated: pip list --outdated
+• Use HTTPS in production deployments
+
+═══════════════════════════════════════════════════════════════════════════════
+📞 SUPPORT
+═══════════════════════════════════════════════════════════════════════════════
+Repository: https://github.com/singhuday26/PRISM
+Issues: https://github.com/singhuday26/PRISM/issues
+Branch: side_branch (current development)
+Main Branch: main
+
+═══════════════════════════════════════════════════════════════════════════════
+Last Updated: January 29, 2026
+Version: 1.0.0
+═══════════════════════════════════════════════════════════════════════════════

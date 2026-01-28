@@ -18,7 +18,7 @@ from backend.exceptions import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/resources", tags=["resources"])
+router = APIRouter()
 
 def get_resource_service():
     return ResourceService()

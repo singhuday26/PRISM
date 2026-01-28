@@ -8,6 +8,7 @@ pymongo==4.6.1
 # Data Validation
 pydantic==2.6.1
 pydantic-settings==2.1.0
+email-validator>=2.3.0
 
 # Configuration
 python-dotenv==1.0.1
@@ -22,6 +23,16 @@ requests==2.31.0
 # Data Processing
 pandas==2.2.0
 numpy==1.26.3
+
+# Visualization
+matplotlib>=3.10.0
+seaborn>=0.13.0
+
+# PDF Generation
+reportlab>=4.4.0
+
+# Templating
+jinja2>=3.1.0
 
 # Forecasting
 statsmodels>=0.14.0

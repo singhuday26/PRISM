@@ -11,44 +11,53 @@ logger = logging.getLogger(__name__)
 
 # India state boundaries (simplified GeoJSON coordinates)
 # These are approximate centroids/simplified polygons for visualization
+# India state boundaries (simplified GeoJSON coordinates)
+# Contains Polygons for key demo regions, Points for others
 INDIA_STATE_GEOMETRIES = {
+    "IN-MH": {
+        "name": "Maharashtra", 
+        "type": "Polygon",
+        "coordinates": [[
+            [72.6, 20.0], [74.5, 22.0], [78.0, 21.5], [80.5, 20.0], 
+            [80.0, 18.5], [77.0, 17.5], [74.0, 16.0], [73.0, 16.5], 
+            [72.6, 20.0]
+        ]]
+    },
+    "IN-KA": {
+        "name": "Karnataka", 
+        "type": "Polygon",
+        "coordinates": [[
+            [74.0, 15.0], [77.5, 18.0], [77.5, 14.0], [78.0, 13.0], 
+            [76.0, 11.5], [75.0, 12.0], [74.0, 15.0]
+        ]]
+    },
+    "IN-TN": {
+        "name": "Tamil Nadu", 
+        "type": "Polygon",
+        "coordinates": [[
+            [76.0, 11.5], [78.0, 13.5], [80.3, 13.5], [79.8, 10.0], 
+            [77.5, 8.0], [76.0, 11.5]
+        ]]
+    },
+    "IN-DL": {
+        "name": "Delhi", 
+        "type": "Polygon",
+        "coordinates": [[
+            [76.8, 28.4], [77.3, 28.4], [77.3, 28.9], [76.8, 28.9], [76.8, 28.4]
+        ]]
+    },
+    "IN-WB": {
+        "name": "West Bengal", 
+        "type": "Polygon",
+        "coordinates": [[
+            [86.0, 22.0], [88.0, 27.0], [89.8, 26.5], [89.0, 21.5], [86.0, 22.0]
+        ]]
+    },
+    # Fallback Points for others
     "IN-AP": {"name": "Andhra Pradesh", "center": [79.74, 15.91], "type": "Point"},
-    "IN-AR": {"name": "Arunachal Pradesh", "center": [94.72, 28.22], "type": "Point"},
-    "IN-AS": {"name": "Assam", "center": [92.94, 26.20], "type": "Point"},
-    "IN-BR": {"name": "Bihar", "center": [85.31, 25.10], "type": "Point"},
-    "IN-CT": {"name": "Chhattisgarh", "center": [81.87, 21.27], "type": "Point"},
-    "IN-GA": {"name": "Goa", "center": [74.12, 15.30], "type": "Point"},
     "IN-GJ": {"name": "Gujarat", "center": [71.19, 22.26], "type": "Point"},
-    "IN-HR": {"name": "Haryana", "center": [76.09, 29.06], "type": "Point"},
-    "IN-HP": {"name": "Himachal Pradesh", "center": [77.17, 31.10], "type": "Point"},
-    "IN-JH": {"name": "Jharkhand", "center": [85.28, 23.61], "type": "Point"},
-    "IN-KA": {"name": "Karnataka", "center": [75.71, 15.32], "type": "Point"},
     "IN-KL": {"name": "Kerala", "center": [76.27, 10.85], "type": "Point"},
-    "IN-MP": {"name": "Madhya Pradesh", "center": [78.66, 22.97], "type": "Point"},
-    "IN-MH": {"name": "Maharashtra", "center": [75.71, 19.75], "type": "Point"},
-    "IN-MN": {"name": "Manipur", "center": [93.91, 24.66], "type": "Point"},
-    "IN-ML": {"name": "Meghalaya", "center": [91.37, 25.47], "type": "Point"},
-    "IN-MZ": {"name": "Mizoram", "center": [92.94, 23.16], "type": "Point"},
-    "IN-NL": {"name": "Nagaland", "center": [94.56, 26.16], "type": "Point"},
-    "IN-OR": {"name": "Odisha", "center": [85.09, 20.95], "type": "Point"},
-    "IN-PB": {"name": "Punjab", "center": [75.34, 31.15], "type": "Point"},
-    "IN-RJ": {"name": "Rajasthan", "center": [74.22, 27.02], "type": "Point"},
-    "IN-SK": {"name": "Sikkim", "center": [88.51, 27.53], "type": "Point"},
-    "IN-TN": {"name": "Tamil Nadu", "center": [78.66, 11.13], "type": "Point"},
-    "IN-TG": {"name": "Telangana", "center": [79.02, 18.11], "type": "Point"},
-    "IN-TR": {"name": "Tripura", "center": [91.99, 23.94], "type": "Point"},
     "IN-UP": {"name": "Uttar Pradesh", "center": [80.95, 26.85], "type": "Point"},
-    "IN-UK": {"name": "Uttarakhand", "center": [79.02, 30.07], "type": "Point"},
-    "IN-WB": {"name": "West Bengal", "center": [87.86, 22.99], "type": "Point"},
-    "IN-AN": {"name": "Andaman and Nicobar", "center": [92.62, 11.74], "type": "Point"},
-    "IN-CH": {"name": "Chandigarh", "center": [76.77, 30.73], "type": "Point"},
-    "IN-DN": {"name": "Dadra and Nagar Haveli", "center": [73.01, 20.19], "type": "Point"},
-    "IN-DD": {"name": "Daman and Diu", "center": [72.83, 20.42], "type": "Point"},
-    "IN-DL": {"name": "Delhi", "center": [77.10, 28.70], "type": "Point"},
-    "IN-JK": {"name": "Jammu and Kashmir", "center": [74.80, 33.78], "type": "Point"},
-    "IN-LA": {"name": "Ladakh", "center": [77.58, 34.15], "type": "Point"},
-    "IN-LD": {"name": "Lakshadweep", "center": [72.64, 10.57], "type": "Point"},
-    "IN-PY": {"name": "Puducherry", "center": [79.81, 11.93], "type": "Point"},
 }
 
 # Risk level color mapping
@@ -100,6 +109,11 @@ def risk_to_geojson_feature(
     
     if geometry_data:
         geometry = geometry_data
+    elif state_info.get("type") == "Polygon":
+        geometry = {
+            "type": "Polygon",
+            "coordinates": state_info["coordinates"]
+        }
     elif state_info.get("center"):
         # Use point geometry as fallback
         geometry = {
@@ -150,7 +164,7 @@ def get_risk_geojson(
         # Build filter
         query: Dict[str, Any] = {}
         if disease:
-            query["disease"] = disease
+            query["disease"] = disease.upper()
         if target_date:
             query["date"] = target_date
         

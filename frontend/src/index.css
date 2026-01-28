@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 /* ============================================================================
    PRISM Command - Enterprise Dark Theme
@@ -10,31 +11,35 @@
     /* Core Background - Ultra Dark */
     --background: 240 10% 4%;
     --foreground: 0 0% 95%;
-    
+
     /* Card & Surface */
     --card: 240 10% 6%;
     --card-foreground: 0 0% 95%;
     --muted: 240 10% 12%;
     --muted-foreground: 0 0% 65%;
-    
+
     /* Border & Ring */
     --border: 240 10% 15%;
     --ring: 240 70% 60%;
-    
+
     /* Critical Status Colors - High Contrast */
-    --critical: 0 84% 60%;       /* #ef4444 - Red */
-    --warning: 45 93% 47%;       /* #eab308 - Amber */
-    --safe: 142 71% 45%;         /* #22c55e - Green */
-    --info: 217 91% 60%;         /* #3b82f6 - Blue */
-    
+    --critical: 0 84% 60%;
+    /* #ef4444 - Red */
+    --warning: 45 93% 47%;
+    /* #eab308 - Amber */
+    --safe: 142 71% 45%;
+    /* #22c55e - Green */
+    --info: 217 91% 60%;
+    /* #3b82f6 - Blue */
+
     /* Primary Action */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* Accent */
     --accent: 240 70% 60%;
     --accent-foreground: 0 0% 100%;
-    
+
     /* Radius */
     --radius: 0.5rem;
   }
@@ -63,6 +68,7 @@
    ============================================================================ */
 
 @layer components {
+
   /* Status Cards */
   .status-critical {
     background: linear-gradient(135deg, hsl(0 84% 20% / 0.5), hsl(0 84% 15% / 0.3));
