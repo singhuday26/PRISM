@@ -17,6 +17,7 @@ INDIA_STATE_GEOMETRIES = {
     "IN-MH": {
         "name": "Maharashtra", 
         "type": "Polygon",
+        "center": [75.7139, 19.7515],
         "coordinates": [[
             [72.6, 20.0], [74.5, 22.0], [78.0, 21.5], [80.5, 20.0], 
             [80.0, 18.5], [77.0, 17.5], [74.0, 16.0], [73.0, 16.5], 
@@ -26,6 +27,7 @@ INDIA_STATE_GEOMETRIES = {
     "IN-KA": {
         "name": "Karnataka", 
         "type": "Polygon",
+        "center": [75.71, 15.32],
         "coordinates": [[
             [74.0, 15.0], [77.5, 18.0], [77.5, 14.0], [78.0, 13.0], 
             [76.0, 11.5], [75.0, 12.0], [74.0, 15.0]
@@ -34,6 +36,7 @@ INDIA_STATE_GEOMETRIES = {
     "IN-TN": {
         "name": "Tamil Nadu", 
         "type": "Polygon",
+        "center": [78.66, 11.13],
         "coordinates": [[
             [76.0, 11.5], [78.0, 13.5], [80.3, 13.5], [79.8, 10.0], 
             [77.5, 8.0], [76.0, 11.5]
@@ -42,6 +45,7 @@ INDIA_STATE_GEOMETRIES = {
     "IN-DL": {
         "name": "Delhi", 
         "type": "Polygon",
+        "center": [77.1, 28.7],
         "coordinates": [[
             [76.8, 28.4], [77.3, 28.4], [77.3, 28.9], [76.8, 28.9], [76.8, 28.4]
         ]]
@@ -49,6 +53,7 @@ INDIA_STATE_GEOMETRIES = {
     "IN-WB": {
         "name": "West Bengal", 
         "type": "Polygon",
+        "center": [87.85, 23.81],
         "coordinates": [[
             [86.0, 22.0], [88.0, 27.0], [89.8, 26.5], [89.0, 21.5], [86.0, 22.0]
         ]]

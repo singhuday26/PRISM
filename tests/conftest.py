@@ -1,12 +1,21 @@
 """
 Pytest configuration and shared fixtures for PRISM tests.
 """
+import os
 import pytest
 from datetime import datetime
 from typing import Generator, Dict, Any
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
+
+# Set default environment variables for tests
+if not os.getenv("MONGO_URI"):
+    os.environ["MONGO_URI"] = "mongodb://localhost:27017/prism_test"
+if not os.getenv("API_URL"):
+    os.environ["API_URL"] = "http://localhost:8000"
+if not os.getenv("LOG_LEVEL"):
+    os.environ["LOG_LEVEL"] = "INFO"
 
 
 # ============================================================================
@@ -21,10 +30,9 @@ def app():
 
 
 @pytest.fixture(scope="session")
-def client(app) -> Generator:
+def client(app):
     """Create test client for API integration tests."""
-    with TestClient(app) as test_client:
-        yield test_client
+    return TestClient(app)
 
 
 # ============================================================================
