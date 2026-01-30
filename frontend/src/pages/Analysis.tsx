@@ -82,7 +82,7 @@ export function Analysis() {
                                     itemStyle={{ color: '#ccc' }}
                                 />
                                 <Legend />
-                                <Line type="monotone" dataKey="cases" stroke="#3b82f6" activeDot={{ r: 8 }} name="Predicted Cases" />
+                                <Line type="monotone" dataKey="pred_mean" stroke="#3b82f6" activeDot={{ r: 8 }} name="Predicted Cases" />
                                 <Line type="monotone" dataKey="cases_actual" stroke="#10b981" strokeDasharray="5 5" name="Actual Cases" />
                             </LineChart>
                         </ResponsiveContainer>
@@ -148,7 +148,7 @@ export function Analysis() {
                     <p className="text-gray-400 text-sm leading-relaxed">
                         Based on current trends, {disease} cases in {regionId} are expected to
                         {forecasts?.forecasts && forecasts.forecasts.length > 1 &&
-                            forecasts.forecasts[forecasts.forecasts.length - 1].cases > forecasts.forecasts[0].cases
+                            forecasts.forecasts[forecasts.forecasts.length - 1].pred_mean > forecasts.forecasts[0].pred_mean
                             ? ' increase ' : ' decrease '}
                         over the next week.
                         Resource allocation should validatethe stock of critical supplies.

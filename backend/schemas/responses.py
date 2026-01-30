@@ -140,6 +140,7 @@ class Forecast(BaseModel):
         default=None, 
         description="When forecast was generated"
     )
+    cases: Optional[int] = Field(default=None, description="Legacy field for backward compatibility")
 
 
 class ForecastsResponse(BaseModel):

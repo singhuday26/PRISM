@@ -113,6 +113,43 @@ def generate_report(request: GenerateReportRequest):
         )
 
 
+@router.get("/list", response_model=ReportListResponse)
+def list_all_reports(
+    region_id: Optional[str] = Query(None, description="Filter by region"),
+    disease: Optional[str] = Query(None, description="Filter by disease"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of results")
+):
+    """
+    List generated reports with optional filters.
+    
+    Args:
+        region_id: Filter by region
+        disease: Filter by disease
+        limit: Maximum results
+        
+    Returns:
+        List of reports
+    """
+    try:
+        reports = list_reports(
+            region_id=region_id,
+            disease=disease,
+            limit=limit
+        )
+        
+        return ReportListResponse(
+            reports=reports,
+            count=len(reports)
+        )
+        
+    except Exception as e:
+        logger.error(f"Error listing reports: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list reports: {str(e)}"
+        )
+
+
 @router.get("/{report_id}", response_model=ReportStatusResponse)
 def get_report(report_id: str):
     """
@@ -208,38 +245,3 @@ def download_report(report_id: str):
         )
 
 
-@router.get("/list", response_model=ReportListResponse)
-def list_all_reports(
-    region_id: Optional[str] = Query(None, description="Filter by region"),
-    disease: Optional[str] = Query(None, description="Filter by disease"),
-    limit: int = Query(20, ge=1, le=100, description="Maximum number of results")
-):
-    """
-    List generated reports with optional filters.
-    
-    Args:
-        region_id: Filter by region
-        disease: Filter by disease
-        limit: Maximum results
-        
-    Returns:
-        List of reports
-    """
-    try:
-        reports = list_reports(
-            region_id=region_id,
-            disease=disease,
-            limit=limit
-        )
-        
-        return ReportListResponse(
-            reports=reports,
-            count=len(reports)
-        )
-        
-    except Exception as e:
-        logger.error(f"Error listing reports: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list reports: {str(e)}"
-        )
