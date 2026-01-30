@@ -8,137 +8,87 @@
 
 ## Overview
 
-Automatically ingest health news from multiple sources to detect early outbreak signals, extract disease/location mentions, and score relevance.
+Automatically ingest health news from multiple sources to detect **Digital Smoke Signals** (early indicators) before official government case counts rise. This system mimics BlueDot's' logic by identifying "informal" signals that precede formal reports.
 
 ---
 
-## Data Sources
+## The "BlueDot" Methodology: Asymmetric Intelligence
 
-| Source | Type | Cost |
-|--------|------|------|
-| WHO Disease Outbreak News | RSS | Free |
-| CDC Health Alert Network | RSS | Free |
-| ProMED-mail | RSS | Free |
-| NewsAPI.org | API | Free tier: 100 req/day |
-| Google News Health | RSS | Free |
+1.  **Informal Signal**: Local news mentions "unusual hospital overcrowding" in Mumbai.
+2.  **Official Lag**: Government case counts for Dengue won't show a spike for 7 more days.
+3.  **PRISM Alert**: Trigger an "Early Warning Alert" to Command Center *now*.
 
 ---
 
-## Architecture
+## Architecture: The Early Warning Pipeline
 
 ```mermaid
 flowchart LR
-    A[RSS Feeds] --> C[Ingestion Worker]
-    B[News APIs] --> C
-    C --> D[NLP Processor]
-    D --> E[MongoDB]
-    E --> F[Signal Detector]
-    F --> G[Alert Generator]
+    A[Data Feeds] --> B[Ingestion]
+    B --> C[NLP Engine]
+    C --> D[(MongoDB)]
+    D --> E{Signal Cross-Ref}
+    F[Official Cases] --> E
+    E --> G[Early Warning Score]
+    G --> H[Command Alert]
 ```
 
 ---
 
-## API Endpoints
+## Early Warning Score (EWS) Logic
 
-### GET /news/articles
-List ingested articles with filters.
+The system calculates an **EWS** for each region:
 
-**Query Params**: `disease`, `location`, `source`, `from_date`, `limit`
+$$
+\text{EWS} = (w_1 \times \text{Mentions}) + (w_2 \times \text{Sentiment}) + (w_3 \times \text{Official Lag})
+$$
 
-**Response**:
-```json
-{
-  "articles": [
-    {
-      "id": "art_123",
-      "title": "Dengue cases surge in Mumbai",
-      "source": "Times of India",
-      "url": "https://...",
-      "published_at": "2024-01-15T10:00:00Z",
-      "diseases": ["dengue"],
-      "locations": ["Mumbai", "Maharashtra"],
-      "relevance_score": 0.92
-    }
-  ],
-  "count": 25
-}
-```
-
-### POST /news/ingest
-Trigger manual ingestion (admin).
-
-### GET /news/signals
-Get extracted health signals.
+-   **Mentions**: Number of unique sources reporting the same disease/location.
+-   **Sentiment**: Negative sentiment score (e.g., "deadly", "outbreak", "crisis").
+-   **Official Lag**: High EWS if News Trend is 📈 but Official Case Trend is ➡️ (suggests unreported event).
 
 ---
 
-## Database Schema
+## Database Schema (Refined)
 
 ```javascript
-// news_articles
-{
-  "_id": ObjectId,
-  "url": "https://...",
-  "url_hash": "sha256_hash",  // For dedup
-  "title": "Dengue outbreak...",
-  "source": "TOI",
-  "source_type": "rss",  // "rss" | "api"
-  "published_at": ISODate,
-  "ingested_at": ISODate,
-  "content": "Full article text...",
-  "language": "en",
-  "diseases": ["dengue"],
-  "locations": ["Mumbai"],
-  "relevance_score": 0.92,
-  "processed": true
-}
-
 // health_signals
 {
   "_id": ObjectId,
-  "article_id": ObjectId,
   "disease": "dengue",
   "location": "Mumbai",
-  "signal_type": "outbreak_mention",
-  "confidence": 0.85,
-  "extracted_at": ISODate
+  "source_titles": ["Mumbai Mirror", "ANI"],
+  "ews_score": 0.85,  // 0 to 1 scale
+  "is_early_warning": true, // news trend > official trend
+  "analyzed_at": ISODate
 }
 ```
 
 ---
 
-## NLP Processing
+## NLP Processor (BlueDot Upgrade)
 
-Use **spaCy** for Named Entity Recognition:
-
-```python
-import spacy
-
-nlp = spacy.load("en_core_web_sm")
-
-DISEASE_KEYWORDS = ["dengue", "covid", "malaria", "cholera", ...]
-
-def extract_entities(text: str):
-    doc = nlp(text)
-    locations = [ent.text for ent in doc.ents if ent.label_ == "GPE"]
-    diseases = [w for w in DISEASE_KEYWORDS if w.lower() in text.lower()]
-    return {"locations": locations, "diseases": diseases}
-```
-
----
-
-## Background Jobs
-
-Use **APScheduler** or **Celery**:
+Use **Transformers (HuggingFace)** instead of just spaCy for deeper sentiment:
 
 ```python
-# Ingest every 30 minutes
-@scheduler.scheduled_job('interval', minutes=30)
-async def ingest_news():
-    await ingest_rss_feeds()
-    await ingest_news_api()
-    await process_unprocessed_articles()
+from transformers import pipeline
+
+sentiment_analyzer = pipeline("sentiment-analysis")
+
+def analyze_signal(text: str):
+    # 1. Extract Entities (Existing logic)
+    entities = extract_entities(text) 
+    
+    # 2. Analyze Urgency/Sentiment
+    sentiment = sentiment_analyzer(text[:512])[0]
+    
+    return {
+        "entities": entities,
+        "sentiment_label": sentiment['label'],
+        "sentiment_score": sentiment['score']
+    }
 ```
+
 
 ---
 

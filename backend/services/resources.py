@@ -66,37 +66,55 @@ class ResourceService:
     ) -> int:
         """
         Estimate active cases by summing new cases over the last N days (avg_stay_days).
-        Uses forecasts_daily for future dates.
+        Integrates both historical data (cases_daily) and future forecasts (forecasts_daily).
         """
-        # We need data from (target_date - avg_stay_days) to target_date
         target_dt = date.fromisoformat(target_date)
         start_dt = target_dt - timedelta(days=avg_stay_days - 1)
         start_date = start_dt.isoformat()
 
-        # Fetch forecasts
-        # Note: In a real system, we'd also check 'cases_daily' for historical data 
-        # if the window overlaps with the past. For MVP, assuming we have forecasts coverage.
-        
-        cursor = self.forecasts_col.find({
+        # Query 1: Historical Data (cases_daily)
+        # Uses 'confirmed' field
+        hist_cursor = self.db["cases_daily"].find({
             "region_id": region_id,
             "disease": disease,
             "date": {"$gte": start_date, "$lte": target_date}
         })
         
-        total_new_cases = 0
-        count = 0
-        for doc in cursor:
-            # Use predicted mean
-            total_new_cases += doc.get("pred_mean", 0)
-            count += 1
+        # Query 2: Forecast Data (forecasts_daily)
+        # Uses 'cases' or 'pred_mean' field
+        forecast_cursor = self.forecasts_col.find({
+            "region_id": region_id,
+            "disease": disease,
+            "date": {"$gte": start_date, "$lte": target_date}
+        })
+        
+        # Merge data by date to avoid double counting if overlaps exist
+        daily_counts = {}
+        
+        # Prefer historical data
+        hist_count = 0
+        for doc in hist_cursor:
+            d = doc["date"]
+            count = doc.get("confirmed", 0)
+            daily_counts[d] = count
+            hist_count += 1
             
-        if count == 0:
-            logger.warning(f"No forecast data found for {region_id} {disease} window {start_date} to {target_date}")
-            return 0
+        # Fill gaps with forecast data
+        fc_count = 0
+        for doc in forecast_cursor:
+            d = doc["date"]
+            if d not in daily_counts:
+                # Handle inconsistent field names
+                count = doc.get("cases") or doc.get("pred_mean") or 0
+                daily_counts[d] = count
+            fc_count += 1
+        
+        total_active = sum(daily_counts.values())
+        
+        if total_active == 0 and avg_stay_days > 0:
+            logger.warning(f"No case data found for {region_id} {disease} window {start_date} to {target_date}")
             
-        # Approximation: Active cases ~= Sum of new cases during infection period
-        # This assumes no recovery until end of period, which is a conservative "peak load" estimate.
-        return int(total_new_cases)
+        return int(total_active)
 
     def predict_demand(
         self, 

@@ -200,3 +200,37 @@ Task: Build a Simulation Engine to generate realistic outbreak data for demos.
 
 Constraint: Data must look realistic enough for a faculty demo. No flat lines.
 ```
+
+### [Frontend] P2: Public App (Product B)
+
+```
+I'm working on PRISM Public (Product B).
+Context: C:\0001_Project\PRISM
+Spec: docs/planning/FEATURE_PUBLIC_APP.md
+
+Task: Build the "Health Weather App" for citizens.
+1. Create a simplified layout `PublicLayout.tsx` (Mobile-First).
+2. Create a "Traffic Light" Risk Component (Green/Yellow/Red).
+3. Connect to `GET /risk/latest` (reusing existing API for now).
+4. Add hardcoded advice logic: "If Red -> Show 'Avoid Outdoors'".
+
+Constraint: ZERO graphs. ZERO tables. Only big text and colors.
+```
+
+### [Intelligence] P1: Digital Smoke Signals (BlueDot News)
+
+```
+I'm working on PRISM Command (Product A).
+Context: C:\0001_Project\PRISM
+Spec: docs/planning/FEATURE_NEWS_INGESTION.md
+
+Task: Build the BlueDot-inspired Early Warning System.
+1. Implement the Ingestion Worker (`backend/services/news/ingestion.py`) to fetch RSS/NewsAPI.
+2. Build the NLP Engine using HuggingFace Transformers for Sentiment + spaCy for NER.
+3. **CRITICAL**: Implement the Early Warning Score (EWS) logic:
+   - Calculate EWS = (Mentions * 0.4) + (Sentiment * 0.4) + (OfficialLag * 0.2).
+   - High score if: News mentions rising cases BUT official DB trend is flat.
+4. Store results in `health_signals` collection.
+
+Constraint: This must be "Predictive". We want to see signals *before* the charts spike.
+```

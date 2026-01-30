@@ -86,6 +86,7 @@ def ensure_indexes() -> None:
         db["cases_daily"].create_index([
             ("region_id", ASCENDING),
             ("date", ASCENDING),
+            ("disease", ASCENDING),
         ], unique=True)
         logger.info("Created compound index on cases_daily")
         
