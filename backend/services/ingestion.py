@@ -7,13 +7,19 @@ logger = logging.getLogger(__name__)
 
 
 def upsert_regions(regions: Iterable[Dict]) -> int:
-    """Upsert region documents."""
+    """Upsert region documents with disease isolation."""
     try:
         db = get_db()
         inserted = 0
         for region in regions:
+            # Build query filter including disease for proper isolation
+            query_filter = {"region_id": region["region_id"]}
+            # Include disease if present (for disease-specific region metadata)
+            if "disease" in region and region["disease"] is not None:
+                query_filter["disease"] = region["disease"]
+
             res = db["regions"].update_one(
-                {"region_id": region["region_id"]},
+                query_filter,
                 {"$setOnInsert": region},
                 upsert=True,
             )
@@ -30,13 +36,22 @@ def upsert_regions(regions: Iterable[Dict]) -> int:
 
 
 def upsert_cases(cases: Iterable[Dict]) -> int:
-    """Upsert case documents."""
+    """Upsert case documents with disease isolation."""
     try:
         db = get_db()
         inserted = 0
         for case in cases:
+            # Build query filter including disease for proper isolation
+            query_filter = {
+                "region_id": case["region_id"],
+                "date": case["date"],
+            }
+            # Include disease in filter if present
+            if "disease" in case and case["disease"] is not None:
+                query_filter["disease"] = case["disease"]
+
             res = db["cases_daily"].update_one(
-                {"region_id": case["region_id"], "date": case["date"]},
+                query_filter,
                 {"$setOnInsert": case},
                 upsert=True,
             )

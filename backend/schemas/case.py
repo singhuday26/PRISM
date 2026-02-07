@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 
 class CaseDaily(BaseModel):
@@ -7,3 +8,4 @@ class CaseDaily(BaseModel):
     confirmed: int = Field(ge=0)
     deaths: int = Field(ge=0)
     recovered: int = Field(ge=0)
+    disease: Optional[str] = Field(default=None, description="Disease identifier (e.g., DENGUE, COVID)")

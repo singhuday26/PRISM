@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Optional
 
 
 class ForecastDaily(BaseModel):
@@ -10,3 +11,4 @@ class ForecastDaily(BaseModel):
     pred_upper: float = Field(description="Predicted upper bound")
     model_version: str = Field(description="Version of the forecasting model")
     generated_at: datetime = Field(description="Timestamp when forecast was generated")
+    disease: Optional[str] = Field(default=None, description="Disease identifier")

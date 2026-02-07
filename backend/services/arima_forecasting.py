@@ -241,10 +241,19 @@ def generate_arima_forecast(
             }
             if disease:
                 doc["disease"] = disease
-                
+
+            # Build upsert filter including disease for proper isolation
+            upsert_filter = {
+                "region_id": region_id,
+                "date": f_date,
+                "model_version": model_version
+            }
+            if disease:
+                upsert_filter["disease"] = disease
+
             # Store in database
             forecasts_col.update_one(
-                {"region_id": region_id, "date": f_date, "model_version": model_version},
+                upsert_filter,
                 {"$set": doc},
                 upsert=True,
             )

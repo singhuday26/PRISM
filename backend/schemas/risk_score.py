@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Optional
 
 
 class RiskScore(BaseModel):
@@ -9,3 +10,4 @@ class RiskScore(BaseModel):
     risk_level: str = Field(description="Risk level: LOW/MEDIUM/HIGH")
     drivers: list[str] = Field(description="List of risk drivers")
     updated_at: datetime = Field(description="Timestamp of last update")
+    disease: Optional[str] = Field(default=None, description="Disease identifier")

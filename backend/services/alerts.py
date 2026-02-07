@@ -71,8 +71,18 @@ def generate_alerts(target_date: Optional[str] = None, disease: Optional[str] = 
             }
             if disease:
                 alert["disease"] = disease
+
+            # Build upsert filter including disease for proper isolation
+            upsert_filter = {
+                "region_id": alert["region_id"],
+                "date": target_date,
+                "reason": alert["reason"]
+            }
+            if disease:
+                upsert_filter["disease"] = disease
+
             alerts_col.update_one(
-                {"region_id": alert["region_id"], "date": target_date, "reason": alert["reason"]},
+                upsert_filter,
                 {"$set": alert},
                 upsert=True,
             )

@@ -74,42 +74,69 @@ def check_db_health() -> dict:
 
 
 def ensure_indexes() -> None:
-    """Create database indexes with error handling."""
+    """Create database indexes with error handling for multi-disease isolation."""
     try:
         db = get_db()
-        
-        # Regions index
-        db["regions"].create_index("region_id", unique=True)
-        logger.info("Created index on regions.region_id")
-        
-        # Cases daily compound index
+
+        # Regions index: compound (region_id, disease) to allow same region_id for different diseases
+        # sparse=True allows null disease values for disease-agnostic regions
+        db["regions"].create_index([
+            ("region_id", ASCENDING),
+            ("disease", ASCENDING),
+        ], unique=True, sparse=True)
+        logger.info("Created compound index on regions (region_id, disease)")
+
+        # Cases daily compound index: includes disease for multi-disease isolation
+        # sparse=True allows backward compatibility with documents lacking disease field
         db["cases_daily"].create_index([
             ("region_id", ASCENDING),
             ("date", ASCENDING),
             ("disease", ASCENDING),
-        ], unique=True)
-        logger.info("Created compound index on cases_daily")
-        
-        # Forecasts daily compound index
+        ], unique=True, sparse=True)
+        logger.info("Created compound index on cases_daily (region_id, date, disease)")
+
+        # Forecasts daily: add disease and model_version to unique constraint
         db["forecasts_daily"].create_index([
             ("region_id", ASCENDING),
             ("date", ASCENDING),
-        ])
-        logger.info("Created compound index on forecasts_daily")
-        
-        # Additional indexes for performance
+            ("disease", ASCENDING),
+            ("model_version", ASCENDING),
+        ], unique=True, sparse=True)
+        logger.info("Created compound index on forecasts_daily (region_id, date, disease, model_version)")
+
+        # Risk scores: unique constraint for data isolation
+        db["risk_scores"].create_index([
+            ("region_id", ASCENDING),
+            ("date", ASCENDING),
+            ("disease", ASCENDING),
+        ], unique=True, sparse=True)
+        logger.info("Created unique index on risk_scores (region_id, date, disease)")
+
+        # Risk scores: performance index for queries
         db["risk_scores"].create_index([
             ("date", ASCENDING),
+            ("disease", ASCENDING),
             ("risk_score", ASCENDING),
         ])
-        logger.info("Created index on risk_scores")
-        
+        logger.info("Created performance index on risk_scores (date, disease, risk_score)")
+
+        # Alerts: unique constraint for data isolation
+        db["alerts"].create_index([
+            ("region_id", ASCENDING),
+            ("date", ASCENDING),
+            ("disease", ASCENDING),
+            ("reason", ASCENDING),
+        ], unique=True, sparse=True)
+        logger.info("Created unique index on alerts (region_id, date, disease, reason)")
+
+        # Alerts: performance index for queries
         db["alerts"].create_index([
             ("date", ASCENDING),
+            ("disease", ASCENDING),
             ("risk_score", ASCENDING),
         ])
-        logger.info("Created index on alerts")
-        
+        logger.info("Created performance index on alerts (date, disease, risk_score)")
+
         logger.info("All database indexes created successfully")
     except OperationFailure as e:
         logger.error(f"Failed to create indexes: {e}")

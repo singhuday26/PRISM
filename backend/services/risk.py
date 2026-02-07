@@ -221,8 +221,14 @@ def compute_risk_scores(target_date: Optional[str] = None, disease: Optional[str
             }
             if disease:
                 doc["disease"] = disease
+
+            # Build upsert filter including disease for proper isolation
+            upsert_filter = {"region_id": region_id, "date": target_date}
+            if disease:
+                upsert_filter["disease"] = disease
+
             risk_col.update_one(
-                {"region_id": region_id, "date": target_date}, {"$set": doc}, upsert=True
+                upsert_filter, {"$set": doc}, upsert=True
             )
             results.append(doc)
 

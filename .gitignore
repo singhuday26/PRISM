@@ -69,6 +69,10 @@ dmypy.json
 # Streamlit
 .streamlit/
 
+# Claude temporary session files
+tmpclaude-*
+nul
+
 # Project specific
 *.csv.bak
 backup/
