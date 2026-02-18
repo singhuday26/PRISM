@@ -1,10 +1,64 @@
-# PRISM Codebase Robustness Improvements
+# PRISM — Changelog
 
 ## Summary
 
-This document outlines all the improvements made to enhance the robustness, reliability, and maintainability of the PRISM application.
+This document covers all improvements made to the PRISM codebase from initial robustness pass through full-stack feature completion.
 
-## Changes Made
+---
+
+## Recent Changes (Phase 1–4)
+
+### Frontend — React 19 + Vite 7 + TypeScript 5.9
+
+- Built complete single-page application with 5 pages (Dashboard, Analysis, Resources, Reports, Settings)
+- Interactive Leaflet risk heatmap with GeoJSON polygon overlays
+- Recharts forecast chart with confidence bands
+- BedShortageWidget for resource demand estimation
+- Dynamic disease and region selectors on Dashboard, Analysis, Resources pages
+- Live alert banner in Header with severity-colored styling and bell badge count
+- ErrorBoundary class component with graceful error display
+- Typed API client (`api.ts`) with 15+ interfaces covering all endpoints
+- TailwindCSS 4 styling throughout
+- ESLint passes with 0 errors, 0 warnings
+- Vite dev proxy for `/api` → FastAPI backend
+- Production build served at `/ui/` via FastAPI static mount with `base: '/ui/'`
+- Vitest test suite: ErrorBoundary, API URL construction, page smoke tests (13 tests)
+
+### Backend — API & Services
+
+- **Static mount fix**: Changed from `frontend/` to `frontend/dist/` so built SPA is served correctly
+- **Notifications service**: Fixed SMTP field mismatch (`smtp_server` → `smtp_host`, `smtp_sender` → `smtp_from`)
+- **SMS stub**: Enhanced with severity breakdown logging and Twilio setup docstring
+- **GeoJSON service**: Added simplified polygons for all 8 active DB regions (IN-MH, IN-KA, IN-TN, IN-DL, IN-WB, IN-UP, IN-GJ, IN-RJ)
+- **Disease isolation**: DENGUE and COVID pipelines run independently without data corruption
+- **Multi-disease data**: Synthetic COVID dataset (450 daily records) generated and pipeline-verified
+- **Resource prediction**: POST /resources/predict returns bed/ICU/nurse/oxygen demand
+- **Report generation**: PDF reports generated to `generated_reports/` directory
+
+### Testing
+
+- **Backend**: 158+ pytest tests (unit + integration), all passing
+  - 82 unit tests across risk, alerts, forecasting, ARIMA, ingestion, analytics, notifications services
+  - 25+ integration tests covering all 13 API routers
+  - 6 disease isolation tests
+  - New: `test_resources_api.py` (5 tests), `test_notifications_api.py` (6 tests)
+  - New: `test_analytics_service.py` (7 tests), `test_notifications_service.py` (9 tests)
+- **Frontend**: 13 Vitest tests (ErrorBoundary, API, page smoke tests)
+- Coverage target: ≥60% backend service coverage
+
+### Documentation
+
+- Updated README.md with React frontend, full API endpoint list, corrected project structure
+- Updated QUICKSTART.md with Node.js prerequisite, frontend build steps, expanded endpoint table
+- Updated DEVELOPMENT.md with frontend build/test instructions, accurate project tree, Vitest section
+- Updated SECURITY.md with all 25+ API endpoints including diseases, pipeline, evaluation, resources, reports, notifications, geojson
+- Updated CHANGES.md (this file) with comprehensive changelog
+
+---
+
+---
+
+## Initial Robustness Pass (Foundation)
 
 ### 1. Configuration Management (config.py)
 

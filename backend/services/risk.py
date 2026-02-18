@@ -191,8 +191,8 @@ def compute_risk_scores(target_date: Optional[str] = None, disease: Optional[str
         climate_info = " with climate boost" if use_climate_boost else ""
         logger.info(f"Computing risk scores for date: {target_date}{disease_info}{climate_info}")
         
-        region_filter = {"disease": disease} if disease else {}
-        regions = list(regions_col.find(region_filter, {"region_id": 1, "_id": 0}))
+        # Regions are disease-agnostic; all regions are evaluated regardless of disease filter
+        regions = list(regions_col.find({}, {"region_id": 1, "_id": 0}))
         logger.info(f"Processing {len(regions)} regions")
         
         results: List[Dict] = []

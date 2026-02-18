@@ -106,7 +106,7 @@ class Alert(BaseModel):
     date: str = Field(description="Date of the alert (YYYY-MM-DD)")
     risk_score: float = Field(ge=0, le=1, description="Risk score that triggered alert")
     risk_level: Optional[str] = Field(default=None, description="Risk level")
-    reason: str = Field(description="Reason for the alert")
+    reason: Optional[str] = Field(default=None, description="Reason for the alert")
     disease: Optional[str] = Field(default=None, description="Disease type")
     created_at: Optional[datetime] = Field(default=None, description="Alert creation time")
 

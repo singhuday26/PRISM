@@ -191,6 +191,9 @@ def test_forecasts_disease_isolation(clean_test_data):
     test_date = "2024-01-15"
     forecast_date = "2024-01-16"
 
+    # Ensure the region exists so generate_forecasts will process it
+    upsert_regions([{"region_id": test_region, "region_name": "Test Multi Region"}])
+
     # Setup: Insert historical cases for both diseases
     for disease in ["DENGUE", "COVID"]:
         for day in range(1, 16):
@@ -207,14 +210,16 @@ def test_forecasts_disease_isolation(clean_test_data):
     _, dengue_forecasts = generate_forecasts(
         target_date=test_date,
         disease="DENGUE",
-        horizon=7
+        horizon=7,
+        granularity="yearly"
     )
 
     # Generate forecasts for COVID
     _, covid_forecasts = generate_forecasts(
         target_date=test_date,
         disease="COVID",
-        horizon=7
+        horizon=7,
+        granularity="yearly"
     )
 
     # Verify both exist in database for the first forecast date
@@ -237,42 +242,40 @@ def test_forecasts_disease_isolation(clean_test_data):
 
 
 def test_regions_disease_metadata_isolation(clean_test_data):
-    """Verify regions can have disease-specific metadata."""
+    """Verify regions are disease-agnostic — a single region doc serves all diseases."""
     db = get_db()
     test_region = "TEST_REGION_MULTI"
 
-    # Insert disease-agnostic region (disease=None)
+    # Insert region
     upsert_regions([{
         "region_id": test_region,
         "region_name": "Test Multi Region",
-        "disease": None
     }])
 
-    # Insert disease-specific region metadata
-    upsert_regions([{
-        "region_id": test_region,
-        "region_name": "Test Multi Region (DENGUE specific)",
-        "disease": "DENGUE",
-        "vector_control_program": "Active",
-        "surveillance_level": "High"
-    }])
+    # Insert cases for two different diseases in the same region
+    for disease in ["DENGUE", "COVID"]:
+        upsert_cases([{
+            "region_id": test_region,
+            "date": "2024-01-15",
+            "confirmed": 50,
+            "deaths": 2,
+            "recovered": 40,
+            "disease": disease
+        }])
 
-    # Verify both exist
-    generic_region = db["regions"].find_one({
-        "region_id": test_region,
-        "disease": None
-    })
-    dengue_region = db["regions"].find_one({
-        "region_id": test_region,
-        "disease": "DENGUE"
-    })
+    # Verify only one region document exists (not per-disease)
+    region_count = db["regions"].count_documents({"region_id": test_region})
+    assert region_count == 1, f"Should have exactly 1 region doc, got {region_count}"
 
-    assert generic_region is not None, "Generic region should exist"
-    assert dengue_region is not None, "DENGUE-specific region metadata should exist"
-    assert generic_region["region_name"] == "Test Multi Region"
-    assert dengue_region["region_name"] == "Test Multi Region (DENGUE specific)"
-    assert "vector_control_program" in dengue_region
-    assert generic_region["_id"] != dengue_region["_id"], "Should be separate documents"
+    region = db["regions"].find_one({"region_id": test_region})
+    assert region is not None
+    assert region["region_name"] == "Test Multi Region"
+
+    # But cases are still disease-isolated
+    dengue_cases = db["cases_daily"].count_documents({"region_id": test_region, "disease": "DENGUE"})
+    covid_cases = db["cases_daily"].count_documents({"region_id": test_region, "disease": "COVID"})
+    assert dengue_cases >= 1, "DENGUE cases should exist"
+    assert covid_cases >= 1, "COVID cases should exist"
 
 
 def test_concurrent_disease_pipeline(clean_test_data):
@@ -297,7 +300,7 @@ def test_concurrent_disease_pipeline(clean_test_data):
 
     dengue_date, dengue_risks = compute_risk_scores(target_date=test_date, disease="DENGUE")
     dengue_alert_date, dengue_alerts = generate_alerts(target_date=test_date, disease="DENGUE")
-    _, dengue_forecasts = generate_forecasts(target_date=test_date, disease="DENGUE", horizon=3)
+    _, dengue_forecasts = generate_forecasts(target_date=test_date, disease="DENGUE", horizon=3, granularity="yearly")
 
     # Run full pipeline for COVID
     for day in range(1, 16):
@@ -312,7 +315,7 @@ def test_concurrent_disease_pipeline(clean_test_data):
 
     covid_date, covid_risks = compute_risk_scores(target_date=test_date, disease="COVID")
     covid_alert_date, covid_alerts = generate_alerts(target_date=test_date, disease="COVID")
-    _, covid_forecasts = generate_forecasts(target_date=test_date, disease="COVID", horizon=3)
+    _, covid_forecasts = generate_forecasts(target_date=test_date, disease="COVID", horizon=3, granularity="yearly")
 
     # Verify all data exists independently
     dengue_case_count = db["cases_daily"].count_documents({"region_id": test_region, "disease": "DENGUE"})

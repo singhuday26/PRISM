@@ -195,8 +195,8 @@ def generate_forecasts(
             f"{disease_info} using {granularity} data"
         )
         
-        region_filter = {"disease": disease} if disease else {}
-        regions = list(regions_col.find(region_filter, {"region_id": 1, "_id": 0}))
+        # Regions are disease-agnostic; all regions are evaluated regardless of disease filter
+        regions = list(regions_col.find({}, {"region_id": 1, "_id": 0}))
         logger.info(f"Processing {len(regions)} regions")
         
         run_ts = datetime.utcnow()

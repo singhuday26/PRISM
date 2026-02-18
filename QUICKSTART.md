@@ -7,6 +7,7 @@ This guide will get you up and running with PRISM in under 5 minutes.
 Before starting, ensure you have:
 
 - [ ] Python 3.9+ installed (`python --version`)
+- [ ] Node.js 18+ installed (`node --version`) — for React frontend
 - [ ] MongoDB running locally OR MongoDB Atlas account
 - [ ] Git installed (optional)
 
@@ -96,7 +97,18 @@ curl -X POST http://localhost:8000/risk/compute
 curl http://localhost:8000/risk/latest
 ```
 
-### 7. Start Dashboard (Optional)
+### 7. Build the React Frontend
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+The built frontend is served at `http://localhost:8000/ui/` by the API.
+
+### 8. Start Dashboard (Optional)
 
 In a new terminal:
 
@@ -159,6 +171,12 @@ uvicorn backend.app:app --host 0.0.0.0 --port 8000 --workers 4
 # Start dashboard
 streamlit run backend/dashboard/app.py
 
+# Build React frontend
+cd frontend && npm install && npm run build && cd ..
+
+# Run frontend tests
+cd frontend && npm test && cd ..
+
 # Load seed data
 python -m backend.scripts.seed
 
@@ -170,21 +188,35 @@ python -m backend.scripts.create_indexes
 
 # Recompute risk scores
 python -m backend.scripts.recompute_risk
+
+# Run backend tests
+python -m pytest tests/ -v
+
+# Run tests with coverage
+python -m pytest --cov=backend --cov-report=term-missing
 ```
 
 ### Key Endpoints
 
-| Endpoint              | Method | Description                 |
-| --------------------- | ------ | --------------------------- |
-| `/health/`            | GET    | Health check with DB status |
-| `/regions/`           | GET    | List all regions            |
-| `/risk/compute`       | POST   | Compute risk scores         |
-| `/risk/latest`        | GET    | Get latest risk scores      |
-| `/alerts/generate`    | POST   | Generate alerts             |
-| `/alerts/latest`      | GET    | Get latest alerts           |
-| `/hotspots/`          | GET    | Get top hotspots            |
-| `/forecasts/generate` | POST   | Generate forecasts          |
-| `/forecasts/latest`   | GET    | Get latest forecasts        |
+| Endpoint                   | Method | Description                 |
+| -------------------------- | ------ | --------------------------- |
+| `/health/`                 | GET    | Health check with DB status |
+| `/regions/`                | GET    | List all regions            |
+| `/diseases/`               | GET    | List all loaded diseases    |
+| `/risk/compute`            | POST   | Compute risk scores         |
+| `/risk/latest`             | GET    | Get latest risk scores      |
+| `/risk/geojson`            | GET    | Risk heatmap GeoJSON        |
+| `/alerts/generate`         | POST   | Generate alerts             |
+| `/alerts/latest`           | GET    | Get latest alerts           |
+| `/hotspots/`               | GET    | Get top hotspots            |
+| `/forecasts/generate`      | POST   | Generate forecasts          |
+| `/forecasts/latest`        | GET    | Get latest forecasts        |
+| `/pipeline/run`            | POST   | Run full compute pipeline   |
+| `/pipeline/status`         | GET    | Pipeline status             |
+| `/evaluation/forecast`     | GET    | Forecast accuracy metrics   |
+| `/resources/predict`       | POST   | Predict resource demand     |
+| `/reports/generate`        | POST   | Generate PDF report         |
+| `/notifications/subscribe` | POST   | Subscribe to alerts         |
 
 ### Environment Variables Quick Reference
 

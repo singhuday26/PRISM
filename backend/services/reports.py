@@ -485,9 +485,3 @@ def create_risk_trend_chart_base64(risk_data: List[Dict]) -> str:
         return ""
     buf.seek(0)
     return f"data:image/png;base64,{base64.b64encode(buf.read()).decode('utf-8')}"
-
-
-def render_report_template(template_name: str, context: Dict) -> str:
-    """Stub for backward compatibility - ReportLab doesn't use templates."""
-    # Build a simple HTML representation for testing
-    return f"<html><body><h1>{context.get('title', 'Report')}</h1></body></html>"

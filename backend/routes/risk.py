@@ -11,23 +11,10 @@ from backend.services.risk import compute_risk_scores
 from backend.utils.validators import validate_iso_date, validate_disease
 from backend.exceptions import DateValidationError, DiseaseValidationError
 from backend.schemas.responses import RiskScoreResponse as RiskScoreListResponse
+from backend.routes.helpers import handle_validation_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-def _handle_validation_error(e: Exception) -> None:
-    """Convert validation exceptions to HTTP exceptions."""
-    if isinstance(e, DateValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=e.to_dict()
-        )
-    if isinstance(e, DiseaseValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=e.to_dict()
-        )
 
 
 @router.post("/compute", response_model=RiskScoreListResponse)
@@ -51,7 +38,7 @@ def compute_risk(
             response["disease"] = validated_disease
         return response
     except (DateValidationError, DiseaseValidationError) as e:
-        _handle_validation_error(e)
+        handle_validation_error(e)
     except HTTPException:
         raise
     except PyMongoError as e:
@@ -110,7 +97,7 @@ def latest_risk(
             response["disease"] = validated_disease
         return response
     except (DateValidationError, DiseaseValidationError) as e:
-        _handle_validation_error(e)
+        handle_validation_error(e)
     except PyMongoError as e:
         logger.error(f"Database error fetching latest risk: {e}")
         raise HTTPException(

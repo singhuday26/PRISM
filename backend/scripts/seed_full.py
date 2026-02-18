@@ -110,7 +110,7 @@ def run_seed():
                         "disease": d,
                         "risk_score": risk_score,
                         "risk_level": "CRITICAL" if risk_score > 0.7 else "HIGH",
-                        "message": f"{'Critical' if risk_score > 0.7 else 'High'} {d} outbreak risk detected in {r['region_name']}"
+                        "reason": f"{'Critical' if risk_score > 0.7 else 'High'} {d} outbreak risk detected in {r['region_name']}"
                     })
                 
                 # Resources

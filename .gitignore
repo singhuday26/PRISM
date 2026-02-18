@@ -76,3 +76,4 @@ nul
 # Project specific
 *.csv.bak
 backup/
+generated_reports/

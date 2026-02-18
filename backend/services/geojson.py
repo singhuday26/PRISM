@@ -58,11 +58,36 @@ INDIA_STATE_GEOMETRIES = {
             [86.0, 22.0], [88.0, 27.0], [89.8, 26.5], [89.0, 21.5], [86.0, 22.0]
         ]]
     },
-    # Fallback Points for others
+    "IN-UP": {
+        "name": "Uttar Pradesh",
+        "type": "Polygon",
+        "center": [80.95, 26.85],
+        "coordinates": [[
+            [77.0, 28.5], [80.0, 30.5], [84.5, 27.5], [84.0, 24.5],
+            [80.0, 24.0], [77.5, 26.0], [77.0, 28.5]
+        ]]
+    },
+    "IN-GJ": {
+        "name": "Gujarat",
+        "type": "Polygon",
+        "center": [71.19, 22.26],
+        "coordinates": [[
+            [68.5, 23.5], [69.5, 24.5], [72.5, 24.5], [74.0, 23.0],
+            [73.0, 20.5], [70.0, 20.5], [68.5, 23.5]
+        ]]
+    },
+    "IN-RJ": {
+        "name": "Rajasthan",
+        "type": "Polygon",
+        "center": [73.77, 26.92],
+        "coordinates": [[
+            [69.5, 25.0], [70.5, 28.0], [74.0, 30.0], [78.0, 28.5],
+            [77.5, 26.0], [76.0, 24.0], [73.0, 23.0], [69.5, 25.0]
+        ]]
+    },
+    # Fallback Points for any others
     "IN-AP": {"name": "Andhra Pradesh", "center": [79.74, 15.91], "type": "Point"},
-    "IN-GJ": {"name": "Gujarat", "center": [71.19, 22.26], "type": "Point"},
     "IN-KL": {"name": "Kerala", "center": [76.27, 10.85], "type": "Point"},
-    "IN-UP": {"name": "Uttar Pradesh", "center": [80.95, 26.85], "type": "Point"},
 }
 
 # Risk level color mapping

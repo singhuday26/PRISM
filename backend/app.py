@@ -130,14 +130,14 @@ def create_app() -> FastAPI:
     app.include_router(resources_router, prefix="/resources", tags=["resources"])
 
     # Serve frontend static files
-    frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
-    if frontend_dir.exists():
+    frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+    if frontend_dist.exists():
         app.mount(
             "/ui",
-            StaticFiles(directory=frontend_dir, html=True),
+            StaticFiles(directory=frontend_dist, html=True),
             name="frontend",
         )
-        logger.info(f"Serving frontend from {frontend_dir}")
+        logger.info(f"Serving frontend from {frontend_dist}")
 
     @app.get("/", include_in_schema=False)
     def _root_redirect():

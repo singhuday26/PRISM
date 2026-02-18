@@ -11,18 +11,10 @@ from backend.services.alerts import generate_alerts
 from backend.utils.validators import validate_iso_date, validate_disease
 from backend.exceptions import DateValidationError, DiseaseValidationError
 from backend.schemas.responses import AlertsResponse
+from backend.routes.helpers import handle_validation_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-def _handle_validation_error(e: Exception) -> None:
-    """Convert validation exceptions to HTTP exceptions."""
-    if isinstance(e, (DateValidationError, DiseaseValidationError)):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=e.to_dict()
-        )
 
 
 @router.post("/generate", response_model=AlertsResponse)
@@ -46,7 +38,7 @@ def generate(
             response["disease"] = validated_disease
         return response
     except (DateValidationError, DiseaseValidationError) as e:
-        _handle_validation_error(e)
+        handle_validation_error(e)
     except HTTPException:
         raise
     except PyMongoError as e:
@@ -105,7 +97,7 @@ def latest(
         
         return {"date": latest_date, "alerts": docs, "count": len(docs)}
     except (DateValidationError, DiseaseValidationError) as e:
-        _handle_validation_error(e)
+        handle_validation_error(e)
     except PyMongoError as e:
         logger.error(f"Database error fetching latest alerts: {e}")
         raise HTTPException(

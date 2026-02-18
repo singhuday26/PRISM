@@ -84,24 +84,59 @@ The application automatically creates indexes on startup:
 
 - `GET /regions/` - List all regions
 
+### Diseases
+
+- `GET /diseases/` - List all loaded diseases with metadata
+
 ### Risk Assessment
 
 - `POST /risk/compute?target_date=YYYY-MM-DD` - Compute risk scores
-- `GET /risk/latest?region_id=xxx` - Get latest risk scores
+- `GET /risk/latest?region_id=xxx&disease=yyy` - Get latest risk scores
+- `GET /risk/geojson?disease=xxx` - Risk heatmap as GeoJSON FeatureCollection
 
 ### Alerts
 
 - `POST /alerts/generate?date=YYYY-MM-DD` - Generate alerts
-- `GET /alerts/latest?region_id=xxx&limit=20` - Get latest alerts
+- `GET /alerts/latest?region_id=xxx&disease=yyy&limit=20` - Get latest alerts
 
 ### Hotspots
 
-- `GET /hotspots/?limit=5` - Get top hotspots
+- `GET /hotspots/?limit=5&disease=xxx` - Get top hotspots
 
 ### Forecasts
 
 - `POST /forecasts/generate?date=YYYY-MM-DD&horizon=7` - Generate forecasts
-- `GET /forecasts/latest?region_id=xxx&horizon=7` - Get latest forecasts
+- `GET /forecasts/latest?region_id=xxx&disease=yyy&horizon=7` - Get latest forecasts
+
+### Pipeline
+
+- `POST /pipeline/run?disease=DENGUE&granularity=daily` - Run full compute pipeline
+- `GET /pipeline/status?disease=xxx` - Pipeline status and last run info
+
+### Evaluation
+
+- `GET /evaluation/forecast?region_id=xxx` - Forecast accuracy (MAE/MAPE)
+- `GET /evaluation/summary` - Aggregate model evaluation
+
+### Resources
+
+- `POST /resources/predict` - Predict bed/ICU/nurse/oxygen demand
+- `GET /resources/config?disease=xxx` - Resource allocation parameters
+
+### Reports
+
+- `POST /reports/generate` - Generate PDF report
+- `GET /reports/list` - List generated reports
+
+### Notifications
+
+- `POST /notifications/subscribe` - Subscribe email to alerts
+- `POST /notifications/unsubscribe` - Unsubscribe
+- `GET /notifications/preferences?email=xxx` - Get notification preferences
+
+### GeoJSON
+
+- `GET /geojson/regions` - Region boundaries as GeoJSON
 
 ## Configuration Reference
 

@@ -5,6 +5,7 @@
 ### Prerequisites
 
 - Python 3.9 or higher
+- Node.js 18 or higher (for React frontend)
 - MongoDB 4.4 or higher (local or Atlas)
 - Git
 
@@ -43,8 +44,17 @@
    ```
 
 5. **Verify installation**
+
    ```bash
    python -c "import fastapi, pymongo, pydantic; print('All dependencies installed!')"
+   ```
+
+6. **Build React frontend**
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   cd ..
    ```
 
 ## Running the Application
@@ -110,6 +120,42 @@ python -m backend.scripts.create_indexes
 ```
 
 ## Testing
+
+### Backend Tests (pytest)
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run unit tests only
+python -m pytest tests/unit/ -v
+
+# Run integration tests only
+python -m pytest tests/integration/ -v
+
+# Run with coverage
+python -m pytest --cov=backend --cov-report=term-missing
+```
+
+Test structure:
+
+- `tests/unit/` — Unit tests for services (risk, alerts, forecasting, ARIMA, analytics, notifications, etc.)
+- `tests/integration/` — Integration tests for all API routes (health, regions, diseases, risk, alerts, forecasts, pipeline, reports, resources, notifications, evaluation)
+- `tests/test_multi_disease_isolation.py` — Verifies disease isolation between DENGUE and COVID pipelines
+
+### Frontend Tests (Vitest)
+
+```bash
+cd frontend
+npm test          # Run once
+npm run test:watch  # Watch mode
+```
+
+Frontend test files:
+
+- `src/test/ErrorBoundary.test.tsx` — Error boundary component tests
+- `src/test/api.test.ts` — API URL construction and fetch mock tests
+- `src/test/pages.test.tsx` — Smoke tests for all page components
 
 ### Manual API Testing
 
@@ -226,21 +272,39 @@ lsof -ti:8000 | xargs kill -9
 ```
 PRISM/
 ├── backend/
-│   ├── app.py              # FastAPI application
-│   ├── config.py           # Configuration management
-│   ├── db.py               # Database connection
-│   ├── logging_config.py   # Logging setup
-│   ├── routes/             # API endpoints
-│   ├── schemas/            # Pydantic models
-│   ├── services/           # Business logic
-│   ├── scripts/            # Utility scripts
-│   └── utils/              # Helper functions
-├── Datasets/               # Sample data
-├── frontend/               # Static UI files
+│   ├── app.py              # FastAPI application (CORS, static mount, lifespan)
+│   ├── config.py           # Environment-driven configuration
+│   ├── db.py               # MongoDB client with connection pooling
+│   ├── disease_config.py   # Per-disease parameters and thresholds
+│   ├── exceptions.py       # Custom exception classes
+│   ├── logging_config.py   # Rotating log configuration
+│   ├── routes/             # 13 API routers (health, regions, diseases, risk, alerts, hotspots, forecasts, pipeline, evaluation, resources, reports, notifications, geojson)
+│   ├── schemas/            # Pydantic v2 validation models
+│   ├── services/           # Business logic (risk, alerts, forecasting, ARIMA, analytics, resources, notifications, reports, email, geojson, ingestion)
+│   ├── scripts/            # 15 data loading and maintenance utilities
+│   ├── dashboard/          # Streamlit UI (app, charts, theme)
+│   ├── templates/          # Report templates
+│   └── utils/              # Validators, climate boost factors
+├── frontend/               # React 19 + Vite 7 + TypeScript 5.9 + TailwindCSS 4
+│   ├── src/
+│   │   ├── components/     # Reusable components (OperationalMap, BedShortageWidget, ErrorBoundary, Layout)
+│   │   ├── pages/          # Page views (Dashboard, Analysis, Resources, Reports, Settings)
+│   │   ├── lib/            # API client with typed interfaces
+│   │   └── test/           # Vitest tests (ErrorBoundary, api, pages)
+│   ├── vite.config.ts      # Build, dev proxy, and test configuration
+│   └── dist/               # Production build (served at /ui/)
+├── tests/                  # pytest test suite
+│   ├── unit/               # Service-level unit tests
+│   └── integration/        # API route integration tests
+├── Datasets/               # Sample CSV data files
+├── docs/                   # Feature documentation and planning
 ├── logs/                   # Application logs (auto-created)
+├── generated_reports/      # PDF reports (auto-created)
 ├── .env                    # Environment variables (create from .env.example)
 ├── .env.example            # Example environment config
-├── .gitignore              # Git ignore patterns
 ├── requirements.txt        # Python dependencies
+├── start_prism.py          # One-command startup (API + Dashboard)
+├── run_pipeline.py         # CLI pipeline runner
+├── disease_manager.py      # Multi-disease data management CLI
 └── README.md               # Project overview
 ```

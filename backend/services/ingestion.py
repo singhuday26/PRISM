@@ -20,7 +20,7 @@ def upsert_regions(regions: Iterable[Dict]) -> int:
 
             res = db["regions"].update_one(
                 query_filter,
-                {"$setOnInsert": region},
+                {"$set": region},
                 upsert=True,
             )
             if res.upserted_id:

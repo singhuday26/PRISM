@@ -32,6 +32,38 @@ except ImportError:
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
+
+def _csv_download(df: pd.DataFrame, label: str, prefix: str, disease_label: str, key: str):
+    """Render a CSV download button for a DataFrame."""
+    try:
+        csv_data = df.to_csv(index=False).encode("utf-8")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{prefix}_{disease_label}_{timestamp}.csv"
+        st.download_button(label=label, data=csv_data, file_name=filename, mime="text/csv", key=key)
+    except Exception as e:
+        st.warning(f"Unable to prepare download: {str(e)}")
+
+
+def _format_alert_rows(alerts):
+    """Convert raw alert dicts to display-ready rows."""
+    rows = []
+    for a in alerts:
+        created_at = a.get("created_at", "")
+        if isinstance(created_at, str):
+            try:
+                dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                created_at = dt.strftime("%Y-%m-%d %H:%M:%S")
+            except Exception:
+                pass
+        rows.append({
+            "Region": a.get("region_id"),
+            "Risk Level": a.get("risk_level"),
+            "Risk Score": round(a.get("risk_score", 0), 3),
+            "Reason": a.get("reason"),
+            "Created At": created_at,
+        })
+    return rows
+
 # Page configuration with modern settings
 st.set_page_config(
     page_title="PRISM Dashboard", 
@@ -429,22 +461,8 @@ try:
             risk_df = pd.DataFrame(table_rows)
             st.dataframe(risk_df, use_container_width=True, hide_index=True)
             
-            # Download button for Risk CSV
-            try:
-                csv_data = risk_df.to_csv(index=False).encode('utf-8')
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                disease_label = disease_filter if disease_filter else "ALL"
-                filename = f"risk_scores_{disease_label}_{timestamp}.csv"
-                
-                st.download_button(
-                    label="📥 Download Risk Scores CSV",
-                    data=csv_data,
-                    file_name=filename,
-                    mime="text/csv",
-                    key="download_risk"
-                )
-            except Exception as e:
-                st.warning(f"Unable to prepare download: {str(e)}")
+            disease_label = disease_filter if disease_filter else "ALL"
+            _csv_download(risk_df, "📥 Download Risk Scores CSV", "risk_scores", disease_label, "download_risk")
         else:
             st.info("No risk score data available")
     else:
@@ -472,75 +490,25 @@ try:
         if alerts:
             st.info(f"📅 Showing {len(alerts)} alerts for {alert_date}")
             
-            alert_rows = []
-            for a in alerts:
-                created_at = a.get("created_at", "")
-                if isinstance(created_at, str):
-                    try:
-                        dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-                        created_at = dt.strftime("%Y-%m-%d %H:%M:%S")
-                    except:
-                        pass
-                
-                alert_rows.append({
-                    "Region": a.get("region_id"),
-                    "Risk Level": a.get("risk_level"),
-                    "Risk Score": round(a.get("risk_score", 0), 3),
-                    "Reason": a.get("reason"),
-                    "Created At": created_at,
-                })
-            
-            alert_df = pd.DataFrame(alert_rows)
+            alert_df = pd.DataFrame(_format_alert_rows(alerts))
             st.dataframe(alert_df, use_container_width=True, hide_index=True)
             
-            # Download button for Alerts CSV (fetch more data for export)
+            # Download button — fetch up to 200 alerts for export
             try:
-                # Fetch up to 200 alerts for download
                 export_url = f"{API_URL}/alerts/latest?limit=200"
                 if disease_filter:
                     export_url += f"&disease={disease_filter}"
-                
                 export_resp = requests.get(export_url, timeout=60)
                 if export_resp.ok:
-                    export_data = export_resp.json()
-                    export_alerts = export_data.get("alerts", [])
-                    
+                    export_alerts = export_resp.json().get("alerts", [])
                     if export_alerts:
-                        export_rows = []
-                        for a in export_alerts:
-                            created_at = a.get("created_at", "")
-                            if isinstance(created_at, str):
-                                try:
-                                    dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
-                                    created_at = dt.strftime("%Y-%m-%d %H:%M:%S")
-                                except:
-                                    pass
-                            
-                            export_rows.append({
-                                "Region": a.get("region_id"),
-                                "Risk Level": a.get("risk_level"),
-                                "Risk Score": round(a.get("risk_score", 0), 3),
-                                "Reason": a.get("reason"),
-                                "Created At": created_at,
-                            })
-                        
-                        export_df = pd.DataFrame(export_rows)
-                        csv_data = export_df.to_csv(index=False).encode('utf-8')
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        export_df = pd.DataFrame(_format_alert_rows(export_alerts))
                         disease_label = disease_filter if disease_filter else "ALL"
-                        filename = f"alerts_{disease_label}_{timestamp}.csv"
-                        
-                        st.download_button(
-                            label=f"📥 Download Alerts CSV ({len(export_alerts)} records)",
-                            data=csv_data,
-                            file_name=filename,
-                            mime="text/csv",
-                            key="download_alerts"
+                        _csv_download(
+                            export_df,
+                            f"📥 Download Alerts CSV ({len(export_alerts)} records)",
+                            "alerts", disease_label, "download_alerts",
                         )
-                    else:
-                        st.info("No alerts available for download")
-                else:
-                    st.warning("Unable to fetch alerts for download")
             except Exception as e:
                 st.warning(f"Unable to prepare download: {str(e)}")
         else:
@@ -618,21 +586,12 @@ try:
                         st.dataframe(forecast_table, use_container_width=True, hide_index=True)
                     
                     # Download button for Forecast CSV
-                    try:
-                        csv_data = forecast_table.to_csv(index=False).encode('utf-8')
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        disease_label = disease_filter if disease_filter else "ALL"
-                        filename = f"forecast_{selected_region}_{disease_label}_{timestamp}.csv"
-                        
-                        st.download_button(
-                            label=f"📥 Download Forecast CSV for {selected_region}",
-                            data=csv_data,
-                            file_name=filename,
-                            mime="text/csv",
-                            key="download_forecast"
-                        )
-                    except Exception as e:
-                        st.warning(f"Unable to prepare download: {str(e)}")
+                    disease_label = disease_filter if disease_filter else "ALL"
+                    _csv_download(
+                        forecast_table,
+                        f"📥 Download Forecast CSV for {selected_region}",
+                        f"forecast_{selected_region}", disease_label, "download_forecast",
+                    )
                     
                     # Model Evaluation Section
                     st.subheader("📐 Model Evaluation")

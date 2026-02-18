@@ -20,18 +20,10 @@ from backend.exceptions import (
     GranularityValidationError,
 )
 from backend.schemas.responses import ForecastsResponse
+from backend.routes.helpers import handle_validation_error
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
-
-def _handle_validation_error(e: Exception) -> None:
-    """Convert validation exceptions to HTTP exceptions."""
-    if isinstance(e, (DateValidationError, DiseaseValidationError, GranularityValidationError)):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=e.to_dict()
-        )
 
 
 @router.post("/generate", response_model=ForecastsResponse)
@@ -80,7 +72,7 @@ def generate(
             response["disease"] = validated_disease
         return response
     except (DateValidationError, DiseaseValidationError, GranularityValidationError) as e:
-        _handle_validation_error(e)
+        handle_validation_error(e)
     except HTTPException:
         raise
     except PyMongoError as e:
@@ -142,7 +134,7 @@ def latest(
         
         return {"date": resolved_date, "forecasts": docs, "count": len(docs)}
     except (DateValidationError, DiseaseValidationError) as e:
-        _handle_validation_error(e)
+        handle_validation_error(e)
     except PyMongoError as e:
         logger.error(f"Database error fetching latest forecasts: {e}")
         raise HTTPException(
@@ -214,7 +206,7 @@ def generate_arima(
             response["disease"] = validated_disease
         return response
     except (DateValidationError, DiseaseValidationError, GranularityValidationError) as e:
-        _handle_validation_error(e)
+        handle_validation_error(e)
     except ImportError as e:
         logger.error(f"ARIMA dependencies not installed: {e}")
         raise HTTPException(

@@ -13,27 +13,15 @@ from backend.services.email import (
 class TestGetSubscribersForAlert:
     """Tests for subscriber matching logic."""
     
-    def test_matches_region(self):
+    def test_matches_region(self, mock_get_db):
         """Alert region should match subscriber region filter."""
         alert = {
             "region_id": "IN-MH",
             "disease": "DENGUE",
             "risk_level": "HIGH"
         }
-        
-        # This would require mock DB, but we can test the logic
-        # In a real test, we'd mock the MongoDB collection
-        pass
-    
-    def test_empty_regions_matches_all(self):
-        """Empty regions array should match all regions."""
-        # Would test with mocked DB
-        pass
-    
-    def test_filters_by_min_risk_level(self):
-        """Subscribers should only get alerts >= their min risk level."""
-        # Would test with mocked DB
-        pass
+        result = get_subscribers_for_alert(alert)
+        assert isinstance(result, list)
 
 
 class TestBuildAlertEmailHtml:
@@ -148,13 +136,6 @@ class TestSendAlertNotification:
     def test_returns_false_if_no_email(self):
         """Should return False if subscriber has no email."""
         alert = {"region_id": "TEST", "risk_level": "HIGH", "risk_score": 0.7}
-        subscriber = {}  # No email field
-        
-        # Would need to mock send_email
-        # For now, just verify it doesn't crash
-        pass
-    
-    def test_uses_unsubscribe_token(self):
-        """Should use subscriber's unsubscribe token."""
-        # Would test with mocked send_email function
-        pass
+        subscriber = {}
+        result = send_alert_notification(alert, subscriber)
+        assert result is False

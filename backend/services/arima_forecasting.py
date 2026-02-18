@@ -311,9 +311,8 @@ def generate_arima_forecasts(
             logger.warning("No date available for ARIMA forecasts")
             return "", []
         
-        # Get regions
-        region_filter = {"disease": disease} if disease else {}
-        regions = list(regions_col.find(region_filter, {"region_id": 1, "_id": 0}))
+        # Regions are disease-agnostic; all regions are evaluated regardless of disease filter
+        regions = list(regions_col.find({}, {"region_id": 1, "_id": 0}))
         
         logger.info(
             f"Generating ARIMA forecasts for {len(regions)} regions, "

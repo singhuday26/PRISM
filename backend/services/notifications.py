@@ -46,8 +46,6 @@ class NotificationService:
         """Log alerts to console/logger."""
         msg = self._format_alert_message(alerts)
         logger.warning(f"\n{'='*40}\n{msg}\n{'='*40}")
-        # Also print to stdout for visibility in CLI runs
-        print(f"\n{'='*40}\n[NOTIFICATION-CONSOLE]\n{msg}\n{'='*40}")
 
     def _send_email(self, alerts: List[Dict[str, Any]]):
         """Send alerts via SMTP."""
@@ -56,7 +54,7 @@ class NotificationService:
             logger.warning("Email alerting enabled but no recipients configured.")
             return
             
-        if not self.settings.smtp_server or not self.settings.smtp_user:
+        if not self.settings.smtp_host or not self.settings.smtp_user:
             logger.warning("SMTP Config missing. Skipping email alerts.")
             return
 
@@ -64,12 +62,12 @@ class NotificationService:
         
         try:
             msg = MIMEMultipart()
-            msg['From'] = self.settings.smtp_sender
+            msg['From'] = self.settings.smtp_from
             msg['To'] = ", ".join(recipients)
             msg['Subject'] = f"PRISM Alert System - {len(alerts)} Alerts"
             msg.attach(MIMEText(msg_body, 'plain'))
 
-            server = smtplib.SMTP(self.settings.smtp_server, self.settings.smtp_port)
+            server = smtplib.SMTP(self.settings.smtp_host, self.settings.smtp_port)
             server.starttls()
             server.login(self.settings.smtp_user, self.settings.smtp_password)
             server.send_message(msg)
@@ -79,21 +77,19 @@ class NotificationService:
             logger.error(f"Failed to send email notifications: {e}")
 
     def _send_sms(self, alerts: List[Dict[str, Any]]):
+        """SMS alerting placeholder — requires Twilio integration.
+        
+        To enable, install twilio (pip install twilio), add TWILIO_ACCOUNT_SID,
+        TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER to Settings in config.py.
         """
-        Send alerts via SMS.
-        NOTE: This is a placeholder for Twilio integration.
-        """
-        recipients = self.settings.alert_sms_recipients
-        if not recipients:
-            logger.warning("SMS alerting enabled but no recipients configured.")
-            return
-
-        # Placeholder for Twilio/SNS integration
-        logger.info(f"[SMS MOCK] Sending SMS to {recipients}: {len(alerts)} alerts detected.")
-        # In a real implementation:
-        # client = Client(account_sid, auth_token)
-        # for number in recipients:
-        #     client.messages.create(...)
+        severities = {}
+        for a in alerts:
+            sev = a.get("severity", "UNKNOWN")
+            severities[sev] = severities.get(sev, 0) + 1
+        logger.warning(
+            f"[SMS] Not configured — {len(alerts)} alert(s) skipped "
+            f"(severity breakdown: {severities}). Set up Twilio to enable."
+        )
 
 def dispatch_notifications(alerts: List[Dict[str, Any]]):
     """Helper function to instantiate service and send."""

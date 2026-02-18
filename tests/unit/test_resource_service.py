@@ -40,7 +40,7 @@ def test_predict_demand_math(mock_db):
     # Mock forecasts
     # 5 days of forecasts with 20 cases each = 100 active cases
     mock_forecasts = [
-        {"pred_mean": 20} for _ in range(5)
+        {"pred_mean": 20, "date": f"2024-01-{28+i:02d}"} for i in range(5)
     ]
     
     # Configure mocks
@@ -49,10 +49,14 @@ def test_predict_demand_math(mock_db):
     
     mock_forecasts_col = MagicMock()
     mock_forecasts_col.find.return_value = mock_forecasts
+
+    mock_cases_col = MagicMock()
+    mock_cases_col.find.return_value = []  # No historical data
     
     mock_db.__getitem__.side_effect = lambda x: {
         "disease_config": mock_config_col,
-        "forecasts_daily": mock_forecasts_col
+        "forecasts_daily": mock_forecasts_col,
+        "cases_daily": mock_cases_col
     }.get(x, MagicMock())
     
     with patch("backend.services.resources.get_db", return_value=mock_db):

@@ -52,7 +52,7 @@ export function OperationalMap({ disease }: OperationalMapProps) {
     initMap();
   }, [disease]);
 
-  const onEachFeature = (feature: any, layer: any) => {
+  const onEachFeature = (feature: GeoJSON.Feature, layer: L.Layer) => {
     const {
       region_name,
       risk_score,
@@ -60,9 +60,11 @@ export function OperationalMap({ disease }: OperationalMapProps) {
       date,
     } = feature.properties || {};
 
+    const pathLayer = layer as L.Path;
+
     // Only style if layer supports setStyle (polygons, not markers)
-    if (typeof layer.setStyle === "function") {
-      layer.setStyle({
+    if (typeof pathLayer.setStyle === "function") {
+      pathLayer.setStyle({
         fillColor: getRiskColor(risk_score || 0),
         weight: 1,
         opacity: 1,
@@ -92,13 +94,13 @@ export function OperationalMap({ disease }: OperationalMapProps) {
         </div>
       </div>
     `;
-    layer.bindPopup(popupContent);
+    pathLayer.bindPopup(popupContent);
 
     // Highlight on hover - only for layers that support styling
-    if (typeof layer.setStyle === "function") {
-      layer.on({
-        mouseover: (e: any) => {
-          const l = e.target;
+    if (typeof pathLayer.setStyle === "function") {
+      pathLayer.on({
+        mouseover: (e: L.LeafletMouseEvent) => {
+          const l = e.target as L.Path;
           if (typeof l.setStyle === "function") {
             l.setStyle({
               weight: 2,
@@ -108,8 +110,8 @@ export function OperationalMap({ disease }: OperationalMapProps) {
             l.bringToFront();
           }
         },
-        mouseout: (e: any) => {
-          const l = e.target;
+        mouseout: (e: L.LeafletMouseEvent) => {
+          const l = e.target as L.Path;
           if (typeof l.setStyle === "function") {
             l.setStyle({
               weight: 1,
@@ -123,7 +125,10 @@ export function OperationalMap({ disease }: OperationalMapProps) {
   };
 
   // Convert Point geometries to CircleMarkers with risk-based styling
-  const pointToLayer = (feature: any, latlng: L.LatLng): L.Layer => {
+  const pointToLayer = (
+    feature: GeoJSON.Feature,
+    latlng: L.LatLng,
+  ): L.Layer => {
     const riskScore = feature.properties?.risk_score || 0;
     return L.circleMarker(latlng, {
       radius: 8,
@@ -136,7 +141,7 @@ export function OperationalMap({ disease }: OperationalMapProps) {
   };
 
   // Style function for polygon/line geometries
-  const style = (feature: any) => {
+  const style = (feature: GeoJSON.Feature | undefined) => {
     const riskScore = feature?.properties?.risk_score || 0;
     return {
       fillColor: getRiskColor(riskScore),
