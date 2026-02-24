@@ -60,12 +60,7 @@ h2 {
     padding: 20px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border: 1px solid rgba(102, 126, 234, 0.1);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-[data-testid="metric-container"]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    /* transition removed: prevents layout jitter on every Streamlit re-render */
 }
 
 /* Metric value styling */
@@ -108,8 +103,8 @@ h2 {
 }
 
 .stButton > button[kind="primary"]:hover {
-    transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    /* transform removed: scale on hover caused button-area reflow jitter */
 }
 
 /* Select boxes */
@@ -141,8 +136,8 @@ h2 {
 }
 
 .stDownloadButton > button:hover {
-    transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    /* transform removed: scale on hover caused button-area reflow jitter */
 }
 
 /* Tabs */

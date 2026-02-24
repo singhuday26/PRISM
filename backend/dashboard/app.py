@@ -33,6 +33,110 @@ except ImportError:
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 
+# ============================================================
+# Cached data-fetching helpers
+# All API calls are wrapped in @st.cache_data so that a widget
+# interaction (dropdown change, button click) does NOT re-fetch
+# data that hasn't changed.  TTL = 5 minutes by default.
+# ============================================================
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _api_get_diseases() -> list:
+    try:
+        resp = requests.get(f"{API_URL}/regions/diseases", timeout=30)
+        if resp.ok:
+            return resp.json().get("diseases", [])
+    except Exception:
+        pass
+    return []
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _api_get_hotspots(disease_filter: str | None) -> tuple:
+    url = f"{API_URL}/hotspots"
+    if disease_filter:
+        url += f"?disease={disease_filter}"
+    try:
+        resp = requests.get(url, timeout=30)
+        if resp.ok:
+            return resp.json().get("hotspots", []), None
+        return None, f"HTTP {resp.status_code}"
+    except requests.RequestException as e:
+        return None, str(e)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _api_get_risk_latest(disease_filter: str | None) -> tuple:
+    url = f"{API_URL}/risk/latest"
+    if disease_filter:
+        url += f"?disease={disease_filter}"
+    try:
+        resp = requests.get(url, timeout=30)
+        if resp.ok:
+            data = resp.json()
+            return data.get("risk_scores", []), data.get("date"), None
+        return None, None, f"HTTP {resp.status_code}"
+    except requests.RequestException as e:
+        return None, None, str(e)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _api_get_alerts(disease_filter: str | None, limit: int = 20) -> tuple:
+    url = f"{API_URL}/alerts/latest?limit={limit}"
+    if disease_filter:
+        url += f"&disease={disease_filter}"
+    try:
+        resp = requests.get(url, timeout=30)
+        if resp.ok:
+            data = resp.json()
+            return data.get("alerts", []), data.get("date"), None
+        return None, None, f"HTTP {resp.status_code}"
+    except requests.RequestException as e:
+        return None, None, str(e)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _api_get_regions(disease_filter: str | None) -> list:
+    url = f"{API_URL}/regions"
+    if disease_filter:
+        url += f"?disease={disease_filter}"
+    try:
+        resp = requests.get(url, timeout=30)
+        if resp.ok:
+            return [r.get("region_id") for r in resp.json().get("regions", []) if r.get("region_id")]
+    except Exception:
+        pass
+    return []
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _api_get_forecast(region_id: str, disease_filter: str | None, horizon: int = 7) -> tuple:
+    url = f"{API_URL}/forecasts/latest?region_id={region_id}&horizon={horizon}"
+    if disease_filter:
+        url += f"&disease={disease_filter}"
+    try:
+        resp = requests.get(url, timeout=60)
+        if resp.ok:
+            return resp.json().get("forecasts", []), None
+        return None, f"HTTP {resp.status_code}"
+    except requests.RequestException as e:
+        return None, str(e)
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _api_get_evaluation(region_id: str, horizon: int = 7) -> tuple:
+    try:
+        resp = requests.get(
+            f"{API_URL}/evaluation/forecast?region_id={region_id}&horizon={horizon}",
+            timeout=60,
+        )
+        if resp.ok:
+            return resp.json(), None
+        return None, f"HTTP {resp.status_code}"
+    except requests.RequestException as e:
+        return None, str(e)
+
+
 def _csv_download(df: pd.DataFrame, label: str, prefix: str, disease_label: str, key: str):
     """Render a CSV download button for a DataFrame."""
     try:
@@ -121,31 +225,24 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🦠 Disease Filter")
     
-    # Fetch available diseases
-    try:
-        diseases_resp = requests.get(f"{API_URL}/regions/diseases", timeout=30)
-        if diseases_resp.ok:
-            diseases_data = diseases_resp.json()
-            available_diseases = ["All Diseases"] + diseases_data.get("diseases", [])
-            
-            selected = st.selectbox(
-                "Select Disease:",
-                options=available_diseases,
-                index=0,
-                key="disease_selector"
-            )
-            
-            # Store selected disease (None for "All Diseases")
-            st.session_state.selected_disease = None if selected == "All Diseases" else selected
-            
-            if st.session_state.selected_disease:
-                st.success(f"Filtering by: **{st.session_state.selected_disease}**")
-        else:
-            st.warning("Could not load disease list")
-            st.session_state.selected_disease = None
-    except Exception as e:
-        st.error(f"Error loading diseases: {str(e)}")
-        st.session_state.selected_disease = None
+    # Fetch available diseases (cached — won't re-hit API on every re-render)
+    _disease_list = _api_get_diseases()
+    available_diseases = ["All Diseases"] + _disease_list
+    
+    selected = st.selectbox(
+        "Select Disease:",
+        options=available_diseases,
+        index=0,
+        key="disease_selector",
+    )
+    
+    # Store selected disease (None for "All Diseases")
+    st.session_state.selected_disease = None if selected == "All Diseases" else selected
+    
+    if st.session_state.selected_disease:
+        st.success(f"Filtering by: **{st.session_state.selected_disease}**")
+    elif not _disease_list:
+        st.warning("Could not load disease list")
     
     st.markdown("---")
     st.subheader("🗺️ Navigation")
@@ -282,6 +379,14 @@ with st.sidebar:
                 st.balloons()
                 st.session_state.pipeline_status = "success"
                 
+                # Clear cached API data so the re-run fetches fresh results
+                _api_get_hotspots.clear()
+                _api_get_risk_latest.clear()
+                _api_get_alerts.clear()
+                _api_get_regions.clear()
+                _api_get_forecast.clear()
+                _api_get_evaluation.clear()
+                
                 # Force a rerun to refresh all data
                 st.rerun()
             
@@ -310,9 +415,8 @@ with st.sidebar:
 
 st.markdown("---")
 
-# Build query parameter for disease filter
+# Resolve disease filter once — used throughout all sections
 disease_filter = st.session_state.selected_disease
-disease_query_param = f"?disease={disease_filter}" if disease_filter else ""
 
 # ===========================
 # SECTION 1: HOTSPOTS
@@ -320,157 +424,113 @@ disease_query_param = f"?disease={disease_filter}" if disease_filter else ""
 st.header("🔥 Hotspots")
 st.caption("Regions with highest confirmed case counts")
 
-try:
-    hotspot_resp = requests.get(f"{API_URL}/hotspots{disease_query_param}", timeout=30)
-    if hotspot_resp.ok:
-        data = hotspot_resp.json()
-        hotspots = data.get("hotspots", [])
-        
-        if hotspots:
-            hotspot_df = pd.DataFrame(hotspots)
-            
-            # Format columns for better display
-            if "confirmed_sum" in hotspot_df.columns:
-                hotspot_df["confirmed_sum"] = hotspot_df["confirmed_sum"].apply(lambda x: f"{x:,}")
-            if "deaths_sum" in hotspot_df.columns:
-                hotspot_df["deaths_sum"] = hotspot_df["deaths_sum"].apply(lambda x: f"{x:,}")
-            
-            st.dataframe(hotspot_df, use_container_width=True, hide_index=True)
-        else:
-            st.info("No hotspot data available")
-    else:
-        st.error(f"Failed to load hotspots: HTTP {hotspot_resp.status_code}")
-except requests.RequestException as e:
-    st.error(f"Unable to reach API: {str(e)}")
-except Exception as e:
-    st.error(f"Error displaying hotspots: {str(e)}")
+with st.spinner("Loading hotspots..."):
+    hotspots, hs_err = _api_get_hotspots(disease_filter)
+
+if hs_err:
+    st.error(f"Unable to reach API: {hs_err}")
+elif hotspots is None:
+    st.error("Failed to load hotspots")
+elif hotspots:
+    hotspot_df = pd.DataFrame(hotspots)
+    if "confirmed_sum" in hotspot_df.columns:
+        hotspot_df["confirmed_sum"] = hotspot_df["confirmed_sum"].apply(lambda x: f"{x:,}")
+    if "deaths_sum" in hotspot_df.columns:
+        hotspot_df["deaths_sum"] = hotspot_df["deaths_sum"].apply(lambda x: f"{x:,}")
+    st.dataframe(hotspot_df, use_container_width=True, hide_index=True, key="tbl_hotspots")
+else:
+    st.info("No hotspot data available")
 
 st.markdown("---")
 
 # ===========================
 # SECTION 2: RISK HEATMAP / TOP HOTSPOTS
+# (uses the same cached call as Section 3 — no duplicate fetch)
 # ===========================
 st.header("🗺️ Risk Heatmap / Top Hotspots")
 st.caption("Top 10 regions ranked by risk score")
 
-try:
-    risk_heatmap_resp = requests.get(f"{API_URL}/risk/latest{disease_query_param}", timeout=30)
-    if risk_heatmap_resp.ok:
-        data = risk_heatmap_resp.json()
-        risk_scores = data.get("risk_scores", [])
-        risk_date = data.get("date")
-        
-        if risk_scores:
-            # Sort by risk_score descending and take top 10
-            sorted_risks = sorted(risk_scores, key=lambda x: x.get("risk_score", 0), reverse=True)
-            top_10 = sorted_risks[:10]  # Works even if <10 regions
-            
-            if top_10:
-                st.info(f"📅 Risk assessment for: {risk_date} | Showing top {len(top_10)} regions")
-                
-                # Use Plotly if available, otherwise fallback
-                if PLOTLY_AVAILABLE and CUSTOM_COMPONENTS:
-                    fig = create_risk_heatmap(top_10, f"Top {len(top_10)} Regions by Risk Score")
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    # Fallback to simple bar display
-                    import matplotlib.pyplot as plt
-                    regions = [r.get("region_id", "Unknown") for r in top_10]
-                    scores = [r.get("risk_score", 0) for r in top_10]
-                    
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    bars = ax.barh(regions, scores, color='#667eea')
-                    ax.set_xlabel("Risk Score")
-                    ax.set_xlim(0, 1.0)
-                    ax.grid(axis='x', alpha=0.3)
-                    plt.tight_layout()
-                    st.pyplot(fig)
-                
-                # Create detailed table
-                st.subheader("📋 Risk Details")
-                table_rows = []
-                for r in top_10:
-                    drivers = r.get("drivers") or []
-                    drivers_text = ", ".join(drivers) if isinstance(drivers, list) else str(drivers)
-                    
-                    # Truncate long drivers text for better display
-                    if len(drivers_text) > 100:
-                        drivers_text = drivers_text[:97] + "..."
-                    
-                    table_rows.append({
-                        "Region": r.get("region_id"),
-                        "Risk Score": round(r.get("risk_score", 0), 3),
-                        "Risk Level": r.get("risk_level"),
-                        "Drivers": drivers_text,
-                    })
-                
-                risk_table_df = pd.DataFrame(table_rows)
-                st.dataframe(risk_table_df, use_container_width=True, hide_index=True)
-                
-                # Add color legend
-                with st.expander("🎨 Risk Level Legend"):
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.markdown("🔴 **HIGH** - Score ≥ 0.7")
-                    with col2:
-                        st.markdown("🟠 **MEDIUM** - 0.4 ≤ Score < 0.7")
-                    with col3:
-                        st.markdown("🟢 **LOW** - Score < 0.4")
-            else:
-                st.info("No risk data available for visualization")
-        else:
-            st.info("No risk score data available. Run the pipeline to generate risk scores.")
+with st.spinner("Loading risk scores..."):
+    risk_scores, risk_date, risk_err = _api_get_risk_latest(disease_filter)
+
+if risk_err:
+    st.error(f"Unable to reach API: {risk_err}")
+elif not risk_scores:
+    st.info("No risk score data available. Run the pipeline to generate risk scores.")
+else:
+    sorted_risks = sorted(risk_scores, key=lambda x: x.get("risk_score", 0), reverse=True)
+    top_10 = sorted_risks[:10]
+    
+    st.info(f"📅 Risk assessment for: {risk_date} | Showing top {len(top_10)} regions")
+    
+    if PLOTLY_AVAILABLE and CUSTOM_COMPONENTS:
+        fig = create_risk_heatmap(top_10, f"Top {len(top_10)} Regions by Risk Score")
+        st.plotly_chart(fig, use_container_width=True, key="chart_risk_heatmap")
     else:
-        st.error(f"Failed to load risk scores: HTTP {risk_heatmap_resp.status_code}")
-except requests.RequestException as e:
-    st.error(f"Unable to reach API: {str(e)}")
-except Exception as e:
-    st.error(f"Error displaying risk heatmap: {str(e)}")
+        import matplotlib.pyplot as plt
+        _regions = [r.get("region_id", "Unknown") for r in top_10]
+        _scores  = [r.get("risk_score", 0) for r in top_10]
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.barh(_regions, _scores, color="#667eea")
+        ax.set_xlabel("Risk Score")
+        ax.set_xlim(0, 1.0)
+        ax.grid(axis="x", alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig, clear_figure=True)
+    
+    st.subheader("📋 Risk Details")
+    top10_rows = []
+    for r in top_10:
+        drivers = r.get("drivers") or []
+        dt = ", ".join(drivers) if isinstance(drivers, list) else str(drivers)
+        if len(dt) > 100:
+            dt = dt[:97] + "..."
+        top10_rows.append({
+            "Region": r.get("region_id"),
+            "Risk Score": round(r.get("risk_score", 0), 3),
+            "Risk Level": r.get("risk_level"),
+            "Drivers": dt,
+        })
+    st.dataframe(pd.DataFrame(top10_rows), use_container_width=True, hide_index=True, key="tbl_top10_risk")
+    
+    with st.expander("🎨 Risk Level Legend"):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("🔴 **HIGH** - Score ≥ 0.7")
+        with col2:
+            st.markdown("🟠 **MEDIUM** - 0.4 ≤ Score < 0.7")
+        with col3:
+            st.markdown("🟢 **LOW** - Score < 0.4")
 
 st.markdown("---")
 
 # ===========================
 # SECTION 3: RISK INTELLIGENCE
+# (reuses the already-cached risk data — zero extra API calls)
 # ===========================
 st.header("📊 Risk Intelligence")
 st.caption("Risk scores and drivers for all regions")
 
-try:
-    risk_resp = requests.get(f"{API_URL}/risk/latest{disease_query_param}", timeout=30)
-    if risk_resp.ok:
-        data = risk_resp.json()
-        risk_scores = data.get("risk_scores", [])
-        risk_date = data.get("date")
-        
-        if risk_scores:
-            st.info(f"📅 Latest risk assessment: {risk_date}")
-            
-            # Build table with drivers
-            table_rows = []
-            for r in risk_scores:
-                drivers = r.get("drivers") or []
-                drivers_text = ", ".join(drivers) if isinstance(drivers, list) else str(drivers)
-                
-                table_rows.append({
-                    "Region": r.get("region_id"),
-                    "Risk Score": round(r.get("risk_score", 0), 3),
-                    "Risk Level": r.get("risk_level"),
-                    "Drivers": drivers_text,
-                })
-            
-            risk_df = pd.DataFrame(table_rows)
-            st.dataframe(risk_df, use_container_width=True, hide_index=True)
-            
-            disease_label = disease_filter if disease_filter else "ALL"
-            _csv_download(risk_df, "📥 Download Risk Scores CSV", "risk_scores", disease_label, "download_risk")
-        else:
-            st.info("No risk score data available")
-    else:
-        st.error(f"Failed to load risk scores: HTTP {risk_resp.status_code}")
-except requests.RequestException as e:
-    st.error(f"Unable to reach API: {str(e)}")
-except Exception as e:
-    st.error(f"Error displaying risk intelligence: {str(e)}")
+if risk_err:
+    st.error(f"Unable to reach API: {risk_err}")
+elif not risk_scores:
+    st.info("No risk score data available")
+else:
+    st.info(f"📅 Latest risk assessment: {risk_date}")
+    all_risk_rows = []
+    for r in risk_scores:
+        drivers = r.get("drivers") or []
+        drivers_text = ", ".join(drivers) if isinstance(drivers, list) else str(drivers)
+        all_risk_rows.append({
+            "Region": r.get("region_id"),
+            "Risk Score": round(r.get("risk_score", 0), 3),
+            "Risk Level": r.get("risk_level"),
+            "Drivers": drivers_text,
+        })
+    risk_df = pd.DataFrame(all_risk_rows)
+    st.dataframe(risk_df, use_container_width=True, hide_index=True, key="tbl_risk_intel")
+    disease_label = disease_filter if disease_filter else "ALL"
+    _csv_download(risk_df, "📥 Download Risk Scores CSV", "risk_scores", disease_label, "download_risk")
 
 st.markdown("---")
 
@@ -480,45 +540,30 @@ st.markdown("---")
 st.header("🚨 Alerts Feed")
 st.caption("Latest high-risk alerts from early warning system (limit: 20)")
 
-try:
-    alerts_resp = requests.get(f"{API_URL}/alerts/latest?limit=20{'' if not disease_filter else '&disease=' + disease_filter}", timeout=30)
-    if alerts_resp.ok:
-        data = alerts_resp.json()
-        alerts = data.get("alerts", [])
-        alert_date = data.get("date")
-        
-        if alerts:
-            st.info(f"📅 Showing {len(alerts)} alerts for {alert_date}")
-            
-            alert_df = pd.DataFrame(_format_alert_rows(alerts))
-            st.dataframe(alert_df, use_container_width=True, hide_index=True)
-            
-            # Download button — fetch up to 200 alerts for export
-            try:
-                export_url = f"{API_URL}/alerts/latest?limit=200"
-                if disease_filter:
-                    export_url += f"&disease={disease_filter}"
-                export_resp = requests.get(export_url, timeout=60)
-                if export_resp.ok:
-                    export_alerts = export_resp.json().get("alerts", [])
-                    if export_alerts:
-                        export_df = pd.DataFrame(_format_alert_rows(export_alerts))
-                        disease_label = disease_filter if disease_filter else "ALL"
-                        _csv_download(
-                            export_df,
-                            f"📥 Download Alerts CSV ({len(export_alerts)} records)",
-                            "alerts", disease_label, "download_alerts",
-                        )
-            except Exception as e:
-                st.warning(f"Unable to prepare download: {str(e)}")
-        else:
-            st.warning("No alerts found for the latest date")
-    else:
-        st.error(f"Failed to load alerts: HTTP {alerts_resp.status_code}")
-except requests.RequestException as e:
-    st.error(f"Unable to reach API: {str(e)}")
-except Exception as e:
-    st.error(f"Error displaying alerts: {str(e)}")
+with st.spinner("Loading alerts..."):
+    alerts, alert_date, alerts_err = _api_get_alerts(disease_filter, limit=20)
+
+if alerts_err:
+    st.error(f"Unable to reach API: {alerts_err}")
+elif alerts is None:
+    st.error("Failed to load alerts")
+elif alerts:
+    st.info(f"📅 Showing {len(alerts)} alerts for {alert_date}")
+    alert_df = pd.DataFrame(_format_alert_rows(alerts))
+    st.dataframe(alert_df, use_container_width=True, hide_index=True, key="tbl_alerts")
+    
+    # Download: re-use the cached function with a higher limit
+    export_alerts, _, _ = _api_get_alerts(disease_filter, limit=200)
+    if export_alerts:
+        export_df = pd.DataFrame(_format_alert_rows(export_alerts))
+        disease_label = disease_filter if disease_filter else "ALL"
+        _csv_download(
+            export_df,
+            f"📥 Download Alerts CSV ({len(export_alerts)} records)",
+            "alerts", disease_label, "download_alerts",
+        )
+else:
+    st.warning("No alerts found for the latest date")
 
 st.markdown("---")
 
@@ -528,127 +573,83 @@ st.markdown("---")
 st.header("📈 Forecast Viewer")
 st.caption("7-day forecast with prediction bounds")
 
-try:
-    # Get regions for dropdown (filtered by disease)
-    regions_resp = requests.get(f"{API_URL}/regions{disease_query_param}", timeout=30)
-    region_options = []
+with st.spinner("Loading regions..."):
+    region_options = _api_get_regions(disease_filter)
+
+if not region_options:
+    st.warning("No regions available. Please run the pipeline first.")
+else:
+    selected_region = st.selectbox("Select Region", region_options, key="forecast_region")
     
-    if regions_resp.ok:
-        regions = regions_resp.json().get("regions", [])
-        region_options = [r.get("region_id") for r in regions if r.get("region_id")]
+    with st.spinner(f"Loading forecast for {selected_region}..."):
+        forecasts, fc_err = _api_get_forecast(selected_region, disease_filter, horizon=7)
     
-    if region_options:
-        selected_region = st.selectbox("Select Region", region_options, key="forecast_region")
-        
-        try:
-            forecast_url = f"{API_URL}/forecasts/latest?region_id={selected_region}&horizon=7"
-            if disease_filter:
-                forecast_url += f"&disease={disease_filter}"
-            
-            forecast_resp = requests.get(forecast_url, timeout=60)
-            
-            if forecast_resp.ok:
-                data = forecast_resp.json()
-                forecasts = data.get("forecasts", [])
-                
-                if forecasts:
-                    forecast_df = pd.DataFrame(forecasts)
-                    forecast_df["date"] = pd.to_datetime(forecast_df["date"])
-                    
-                    # Create forecast plot with Plotly
-                    if PLOTLY_AVAILABLE and CUSTOM_COMPONENTS:
-                        fig = create_forecast_chart(forecasts, selected_region)
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        # Fallback to matplotlib
-                        import matplotlib.pyplot as plt
-                        fig, ax = plt.subplots(figsize=(10, 5))
-                        ax.plot(forecast_df["date"], forecast_df["pred_mean"], 
-                                label="Predicted", color="#667eea", marker="o", linewidth=2)
-                        ax.fill_between(forecast_df["date"], forecast_df["pred_lower"], 
-                                       forecast_df["pred_upper"], alpha=0.2, color="#667eea")
-                        ax.set_xlabel("Date")
-                        ax.set_ylabel("Predicted Cases")
-                        ax.set_title(f"7-Day Forecast for {selected_region}")
-                        ax.legend()
-                        ax.grid(True, alpha=0.3)
-                        plt.xticks(rotation=45)
-                        plt.tight_layout()
-                        st.pyplot(fig)
-                    
-                    # Show forecast data table
-                    with st.expander("📋 View Forecast Data"):
-                        forecast_table = forecast_df[["date", "pred_mean", "pred_lower", "pred_upper"]].copy()
-                        forecast_table["date"] = forecast_table["date"].dt.strftime("%Y-%m-%d")
-                        forecast_table["pred_mean"] = forecast_table["pred_mean"].round(1)
-                        forecast_table["pred_lower"] = forecast_table["pred_lower"].round(1)
-                        forecast_table["pred_upper"] = forecast_table["pred_upper"].round(1)
-                        st.dataframe(forecast_table, use_container_width=True, hide_index=True)
-                    
-                    # Download button for Forecast CSV
-                    disease_label = disease_filter if disease_filter else "ALL"
-                    _csv_download(
-                        forecast_table,
-                        f"📥 Download Forecast CSV for {selected_region}",
-                        f"forecast_{selected_region}", disease_label, "download_forecast",
-                    )
-                    
-                    # Model Evaluation Section
-                    st.subheader("📐 Model Evaluation")
-                    st.caption("Forecast accuracy metrics (MAE = Mean Absolute Error, MAPE = Mean Absolute Percentage Error)")
-                    
-                    try:
-                        eval_resp = requests.get(
-                            f"{API_URL}/evaluation/forecast?region_id={selected_region}&horizon=7",
-                            timeout=60
-                        )
-                        
-                        if eval_resp.ok:
-                            eval_data = eval_resp.json()
-                            
-                            col1, col2, col3 = st.columns(3)
-                            
-                            with col1:
-                                mae = eval_data.get("mae")
-                                if mae is not None:
-                                    st.metric("MAE", f"{mae:.2f}", help="Mean Absolute Error - Lower is better")
-                                else:
-                                    st.metric("MAE", "N/A", help="Not enough data to compute")
-                            
-                            with col2:
-                                mape = eval_data.get("mape")
-                                if mape is not None:
-                                    st.metric("MAPE", f"{mape:.2f}%", help="Mean Absolute Percentage Error - Lower is better")
-                                else:
-                                    st.metric("MAPE", "N/A", help="Not enough data to compute")
-                            
-                            with col3:
-                                points = eval_data.get("points_compared", 0)
-                                st.metric("Data Points", points, help="Number of forecast points compared with actuals")
-                            
-                            # Show additional info in expander
-                            with st.expander("ℹ️ Evaluation Details"):
-                                st.json(eval_data)
-                        else:
-                            st.warning(f"Evaluation unavailable: HTTP {eval_resp.status_code}")
-                    except requests.RequestException as e:
-                        st.warning(f"Unable to fetch evaluation: {str(e)}")
-                    except Exception as e:
-                        st.warning(f"Error displaying evaluation: {str(e)}")
-                    
-                else:
-                    st.warning(f"No forecast data available for {selected_region}")
-            else:
-                st.error(f"Failed to load forecasts: HTTP {forecast_resp.status_code}")
-        except requests.RequestException as e:
-            st.error(f"Unable to reach API: {str(e)}")
-        except Exception as e:
-            st.error(f"Error displaying forecast: {str(e)}")
+    if fc_err:
+        st.error(f"Unable to reach API: {fc_err}")
+    elif not forecasts:
+        st.warning(f"No forecast data available for {selected_region}")
     else:
-        st.warning("No regions available. Please run the pipeline first.")
+        forecast_df = pd.DataFrame(forecasts)
+        forecast_df["date"] = pd.to_datetime(forecast_df["date"])
         
-except requests.RequestException as e:
-    st.error(f"Unable to load regions: {str(e)}")
-except Exception as e:
-    st.error(f"Error in forecast viewer: {str(e)}")
+        if PLOTLY_AVAILABLE and CUSTOM_COMPONENTS:
+            fig = create_forecast_chart(forecasts, selected_region)
+            st.plotly_chart(fig, use_container_width=True, key="chart_forecast")
+        else:
+            import matplotlib.pyplot as plt
+            fig, ax = plt.subplots(figsize=(10, 5))
+            ax.plot(forecast_df["date"], forecast_df["pred_mean"],
+                    label="Predicted", color="#667eea", marker="o", linewidth=2)
+            ax.fill_between(forecast_df["date"], forecast_df["pred_lower"],
+                            forecast_df["pred_upper"], alpha=0.2, color="#667eea")
+            ax.set_xlabel("Date")
+            ax.set_ylabel("Predicted Cases")
+            ax.set_title(f"7-Day Forecast for {selected_region}")
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            st.pyplot(fig, clear_figure=True)
+        
+        with st.expander("📋 View Forecast Data"):
+            forecast_table = forecast_df[["date", "pred_mean", "pred_lower", "pred_upper"]].copy()
+            forecast_table["date"] = forecast_table["date"].dt.strftime("%Y-%m-%d")
+            forecast_table["pred_mean"]  = forecast_table["pred_mean"].round(1)
+            forecast_table["pred_lower"] = forecast_table["pred_lower"].round(1)
+            forecast_table["pred_upper"] = forecast_table["pred_upper"].round(1)
+            st.dataframe(forecast_table, use_container_width=True, hide_index=True, key="tbl_forecast")
+        
+        disease_label = disease_filter if disease_filter else "ALL"
+        _csv_download(
+            forecast_table,
+            f"📥 Download Forecast CSV for {selected_region}",
+            f"forecast_{selected_region}", disease_label, "download_forecast",
+        )
+        
+        # Model Evaluation
+        st.subheader("📐 Model Evaluation")
+        st.caption("Forecast accuracy metrics (MAE = Mean Absolute Error, MAPE = Mean Absolute Percentage Error)")
+        
+        with st.spinner("Loading evaluation metrics..."):
+            eval_data, eval_err = _api_get_evaluation(selected_region, horizon=7)
+        
+        if eval_err:
+            st.warning(f"Evaluation unavailable: {eval_err}")
+        elif eval_data:
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                mae = eval_data.get("mae")
+                st.metric("MAE", f"{mae:.2f}" if mae is not None else "N/A",
+                          help="Mean Absolute Error - Lower is better")
+            with col2:
+                mape = eval_data.get("mape")
+                st.metric("MAPE", f"{mape:.2f}%" if mape is not None else "N/A",
+                          help="Mean Absolute Percentage Error - Lower is better")
+            with col3:
+                st.metric("Data Points", eval_data.get("points_compared", 0),
+                          help="Number of forecast points compared with actuals")
+            with st.expander("ℹ️ Evaluation Details"):
+                st.json(eval_data)
+        else:
+            st.warning("No evaluation data returned")
 
