@@ -25,6 +25,8 @@ from .routes.geojson import router as geojson_router
 from .routes.notifications import router as notifications_router
 from .routes.reports import router as reports_router
 from .routes.resources import router as resources_router
+from .routes.auth import router as auth_router
+from .routes.news import router as news_router
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +130,8 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
     app.include_router(reports_router, prefix="/reports", tags=["reports"])
     app.include_router(resources_router, prefix="/resources", tags=["resources"])
+    app.include_router(auth_router)
+    app.include_router(news_router)
 
     # Serve frontend static files
     frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

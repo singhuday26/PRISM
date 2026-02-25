@@ -257,3 +257,40 @@ class ResourcePredictionResponse(BaseModel):
     resources: ResourceDemand = Field(description="Calculated resource demand")
     shortage_risk: bool = Field(default=False, description="Whether demand exceeds capacity (if known)")
 
+
+# ============================================================================
+# News & Signal Models
+# ============================================================================
+
+class NewsArticle(BaseModel):
+    """Individual health news signal/article."""
+    id: Optional[str] = Field(None, alias="_id")
+    title: str = Field(description="Article title")
+    source: str = Field(description="Article source/publisher")
+    url: Optional[str] = Field(None, description="Original source link")
+    published_at: datetime = Field(description="Publication timestamp")
+    content: str = Field(description="Text content or summary snippet")
+    extracted_diseases: List[str] = Field(
+        default_factory=list, 
+        description="Diseases mentioned in the article"
+    )
+    extracted_locations: List[str] = Field(
+        default_factory=list, 
+        description="Geographic locations identified"
+    )
+    relevance_score: float = Field(
+        ge=0, le=1, 
+        description="Automated relevance score (0-1)"
+    )
+
+    class Config:
+        populate_by_name = True
+        json_encoders = {datetime: lambda v: v.isoformat()}
+
+
+class NewsResponse(BaseModel):
+    """Response for news feed listing."""
+    articles: List[NewsArticle] = Field(description="List of ingested news signals")
+    count: int = Field(ge=0, description="Number of articles returned")
+    disease: Optional[str] = Field(default=None, description="Disease filter applied")
+

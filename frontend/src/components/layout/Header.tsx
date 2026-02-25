@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, Bell, CheckCircle } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle, LogOut } from "lucide-react";
 import { fetchAlerts, type Alert } from "../../lib/api";
+import { useAuth } from "../../context/AuthContext";
 
 const SEVERITY_STYLES: Record<
   string,
@@ -35,6 +36,7 @@ const SEVERITY_STYLES: Record<
 export function Header() {
   const [latestAlert, setLatestAlert] = useState<Alert | null>(null);
   const [alertCount, setAlertCount] = useState(0);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     fetchAlerts(undefined, undefined, 5)
@@ -87,11 +89,21 @@ export function Header() {
             </span>
           )}
         </button>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-sm font-medium text-blue-400">
-            A
+        <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+          <div className="flex flex-col items-end mr-1">
+            <span className="text-sm text-gray-300 font-medium">{user?.username || "User"}</span>
+            <span className="text-[10px] text-gray-500 uppercase tracking-widest">{user?.role || "Viewer"}</span>
           </div>
-          <span className="text-sm text-gray-300">Admin</span>
+          <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-sm font-bold text-blue-400 ring-1 ring-blue-500/30">
+            {user?.username?.[0].toUpperCase() || "U"}
+          </div>
+          <button
+            onClick={logout}
+            className="ml-2 p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-400 text-gray-500 transition-all group"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </header>

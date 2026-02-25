@@ -6,6 +6,7 @@ import {
   type Region,
   type DiseaseInfo,
 } from "../lib/api";
+import EarlyWarningFeed from "../components/EarlyWarningFeed";
 
 // Lazy load the map component to prevent SSR/hydration issues
 const OperationalMap = lazy(() =>
@@ -108,15 +109,27 @@ export function Dashboard() {
         />
       </section>
 
-      {/* Operational Map Section */}
-      <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
-          Operational Map
-        </h2>
-        <Suspense fallback={<MapLoading />}>
-          <OperationalMap disease={disease} />
-        </Suspense>
-      </section>
+      {/* Main Grid: Map and News Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
+              Operational Map
+            </h2>
+            <Suspense fallback={<MapLoading />}>
+              <OperationalMap disease={disease} />
+            </Suspense>
+          </section>
+        </div>
+        <div className="lg:col-span-1">
+          <section className="h-full">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
+              Intelligence Signals
+            </h2>
+            <EarlyWarningFeed disease={disease} />
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

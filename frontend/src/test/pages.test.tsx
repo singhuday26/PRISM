@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 /*
@@ -26,7 +26,7 @@ const mockFetch = vi.fn(() =>
       }),
   }),
 );
-global.fetch = mockFetch as unknown as typeof fetch;
+vi.stubGlobal("fetch", mockFetch);
 
 beforeEach(() => {
   mockFetch.mockClear();

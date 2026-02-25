@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // by mocking global.fetch and importing the functions.
 
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+vi.stubGlobal("fetch", mockFetch);
 
 // Reset before each to avoid cross-test contamination
 beforeEach(() => {

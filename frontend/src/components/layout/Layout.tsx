@@ -8,6 +8,8 @@ export function Layout() {
         <div
             style={{
                 display: "flex",
+                flexDirection: "row",
+                flex: 1,
                 minHeight: "100vh",
                 width: "100%",
                 backgroundColor: "#0f172a",

@@ -137,6 +137,17 @@ def ensure_indexes() -> None:
         ])
         logger.info("Created performance index on alerts (date, disease, risk_score)")
 
+        # Users: unique username and email
+        db["users"].create_index("username", unique=True)
+        db["users"].create_index("email", unique=True)
+        logger.info("Created unique indexes on users (username, email)")
+
+        # News Articles: unique title and performance indexes
+        db["news_articles"].create_index("title", unique=True)
+        db["news_articles"].create_index([("extracted_diseases", ASCENDING)])
+        db["news_articles"].create_index([("published_at", ASCENDING)])
+        logger.info("Created indexes on news_articles (title, diseases, date)")
+
         logger.info("All database indexes created successfully")
     except OperationFailure as e:
         logger.error(f"Failed to create indexes: {e}")

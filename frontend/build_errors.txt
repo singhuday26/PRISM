@@ -1,0 +1,11 @@
+﻿src/test/api.test.ts(7,1): error TS2304: Cannot find name 'global'.
+src/test/ErrorBoundary.test.tsx(25,17): error TS2304: Cannot find name 'vi'.
+src/test/ErrorBoundary.test.tsx(29,10): error TS2786: 'ProblemChild' cannot be used as a JSX component.
+  Its type '() => void' is not a valid JSX element type.
+    Type '() => void' is not assignable to type '(props: any) => ReactNode | Promise<ReactNode>'.
+      Type 'void' is not assignable to type 'ReactNode | Promise<ReactNode>'.
+src/test/pages.test.tsx(2,18): error TS6133: 'screen' is declared but its value is never read.
+src/test/pages.test.tsx(29,1): error TS2304: Cannot find name 'global'.
+vite.config.ts(18,3): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and 'test' does not exist in type 'UserConfigExport'.

@@ -1,9 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
-function ProblemChild() {
+function ProblemChild(): React.ReactNode {
   throw new Error("Test error");
+  return null;
 }
 
 function GoodChild() {
@@ -22,7 +23,7 @@ describe("ErrorBoundary", () => {
 
   it("renders error UI when a child throws", () => {
     // Suppress console.error for the expected error
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spy = vi.spyOn(console, "error").mockImplementation(() => { });
 
     render(
       <ErrorBoundary>

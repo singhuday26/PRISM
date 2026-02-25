@@ -11,11 +11,11 @@ export function Sidebar() {
     const location = useLocation();
 
     const navItems = [
-        { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-        { icon: BarChart3, label: "Analysis", path: "/analysis" },
-        { icon: Package, label: "Resources", path: "/resources" },
-        { icon: FileText, label: "Reports", path: "/reports" },
-        { icon: Settings, label: "Settings", path: "/settings" },
+        { icon: LayoutDashboard, label: "Dashboard", path: "/app" },
+        { icon: BarChart3, label: "Analysis", path: "/app/analysis" },
+        { icon: Package, label: "Resources", path: "/app/resources" },
+        { icon: FileText, label: "Reports", path: "/app/reports" },
+        { icon: Settings, label: "Settings", path: "/app/settings" },
     ];
 
     return (
@@ -38,8 +38,8 @@ export function Sidebar() {
                                 <Link
                                     to={path}
                                     className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                        : "text-gray-400 hover:text-white hover:bg-white/5"
                                         }`}
                                 >
                                     <Icon className="w-5 h-5" />
