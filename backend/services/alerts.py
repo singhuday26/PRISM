@@ -60,11 +60,14 @@ def generate_alerts(target_date: Optional[str] = None, disease: Optional[str] = 
             if score < threshold:
                 continue
 
+            risk_level = rd.get("risk_level")
             alert = {
                 "region_id": rd.get("region_id"),
                 "date": target_date,
                 "risk_score": score,
-                "risk_level": rd.get("risk_level"),
+                "risk_level": risk_level,
+                "severity": risk_level,  # alias for frontend compatibility
+                "alert_type": "RISK_THRESHOLD",
                 "reason": f"Risk score {score:.2f} >= threshold {threshold:.2f}",
                 "created_at": datetime.utcnow(),
                 "drivers": rd.get("drivers", []),

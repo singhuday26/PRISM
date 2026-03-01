@@ -111,7 +111,11 @@ export function LoginPage() {
                 </div>
 
                 <p className="mt-8 text-center text-slate-500 text-sm">
-                    Protected by PRISM Security Layer.
+                    <a href="/" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+                        ← Back to Home
+                    </a>
+                    <br />
+                    <span className="mt-2 inline-block">Protected by PRISM Security Layer.</span>
                     <br />
                     Contact administrator for access.
                 </p>

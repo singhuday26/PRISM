@@ -1,0 +1,114 @@
+﻿
+> frontend@0.0.0 lint
+> eslint .
+
+
+C:\0001_Project\PRISM\frontend\src\context\AuthContext.tsx
+  52:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\0001_Project\PRISM\frontend\src\context\ToastContext.tsx
+  71:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx
+  171:35  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx:171:35
+  169 |                 <div className="max-w-7xl mx-auto px-6 md:px-12">
+  170 |                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+> 171 |                         <div ref={diseases.ref} className="space-y-2">
+      |                                   ^^^^^^^^^^^^ Cannot access ref value during render
+  172 |                             <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+  173 |                                 {diseases.count}+
+  174 |                             </div>      react-hooks/refs
+  173:34  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx:173:34
+  171 |                         <div ref={diseases.ref} className="space-y-2">
+  172 |                             <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+> 173 |                                 {diseases.count}+
+      |                                  ^^^^^^^^^^^^^^ Cannot access ref value during render
+  174 |                             </div>
+  175 |                             <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">Diseases Tracked</p>
+  176 |                         </div>    react-hooks/refs
+  177:35  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx:177:35
+  175 |                             <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">Diseases Tracked</p>
+  176 |                         </div>
+> 177 |                         <div ref={states.ref} className="space-y-2">
+      |                                   ^^^^^^^^^^ Cannot access ref value during render
+  178 |                             <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+  179 |                                 {states.count}
+  180 |                             </div>                react-hooks/refs
+  179:34  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx:179:34
+  177 |                         <div ref={states.ref} className="space-y-2">
+  178 |                             <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+> 179 |                                 {states.count}
+      |                                  ^^^^^^^^^^^^ Cannot access ref value during render
+  180 |                             </div>
+  181 |                             <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">States Monitored</p>
+  182 |                         </div>               react-hooks/refs
+  183:35  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx:183:35
+  181 |                             <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">States Monitored</p>
+  182 |                         </div>
+> 183 |                         <div ref={endpoints.ref} className="space-y-2">
+      |                                   ^^^^^^^^^^^^^ Cannot access ref value during render
+  184 |                             <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-400">
+  185 |                                 {endpoints.count}+
+  186 |                             </div>  react-hooks/refs
+  185:34  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx:185:34
+  183 |                         <div ref={endpoints.ref} className="space-y-2">
+  184 |                             <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-400">
+> 185 |                                 {endpoints.count}+
+      |                                  ^^^^^^^^^^^^^^^ Cannot access ref value during render
+  186 |                             </div>
+  187 |                             <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">API Endpoints</p>
+  188 |                         </div>    react-hooks/refs
+  189:35  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx:189:35
+  187 |                             <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">API Endpoints</p>
+  188 |                         </div>
+> 189 |                         <div ref={uptime.ref} className="space-y-2">
+      |                                   ^^^^^^^^^^ Cannot access ref value during render
+  190 |                             <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
+  191 |                                 {uptime.count}%
+  192 |                             </div>               react-hooks/refs
+  191:34  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+C:\0001_Project\PRISM\frontend\src\pages\LandingPage.tsx:191:34
+  189 |                         <div ref={uptime.ref} className="space-y-2">
+  190 |                             <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
+> 191 |                                 {uptime.count}%
+      |                                  ^^^^^^^^^^^^ Cannot access ref value during render
+  192 |                             </div>
+  193 |                             <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">Uptime SLA</p>
+  194 |                         </div>                 react-hooks/refs
+
+C:\0001_Project\PRISM\frontend\src\pages\Reports.tsx
+  51:6  warning  React Hook useEffect has a missing dependency: 'fetchReports'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+Γ£û 11 problems (10 errors, 1 warning)
+

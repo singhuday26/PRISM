@@ -7,6 +7,7 @@ import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
 import { LoginPage } from "./pages/LoginPage";
 import { LandingPage } from "./pages/LandingPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,7 +50,7 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/app" replace />} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

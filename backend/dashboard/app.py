@@ -437,7 +437,7 @@ elif hotspots:
         hotspot_df["confirmed_sum"] = hotspot_df["confirmed_sum"].apply(lambda x: f"{x:,}")
     if "deaths_sum" in hotspot_df.columns:
         hotspot_df["deaths_sum"] = hotspot_df["deaths_sum"].apply(lambda x: f"{x:,}")
-    st.dataframe(hotspot_df, use_container_width=True, hide_index=True, key="tbl_hotspots")
+    st.dataframe(hotspot_df, use_container_width=True, hide_index=True)
 else:
     st.info("No hotspot data available")
 
@@ -491,7 +491,7 @@ else:
             "Risk Level": r.get("risk_level"),
             "Drivers": dt,
         })
-    st.dataframe(pd.DataFrame(top10_rows), use_container_width=True, hide_index=True, key="tbl_top10_risk")
+    st.dataframe(pd.DataFrame(top10_rows), use_container_width=True, hide_index=True)
     
     with st.expander("🎨 Risk Level Legend"):
         col1, col2, col3 = st.columns(3)
@@ -528,7 +528,7 @@ else:
             "Drivers": drivers_text,
         })
     risk_df = pd.DataFrame(all_risk_rows)
-    st.dataframe(risk_df, use_container_width=True, hide_index=True, key="tbl_risk_intel")
+    st.dataframe(risk_df, use_container_width=True, hide_index=True)
     disease_label = disease_filter if disease_filter else "ALL"
     _csv_download(risk_df, "📥 Download Risk Scores CSV", "risk_scores", disease_label, "download_risk")
 
@@ -550,7 +550,7 @@ elif alerts is None:
 elif alerts:
     st.info(f"📅 Showing {len(alerts)} alerts for {alert_date}")
     alert_df = pd.DataFrame(_format_alert_rows(alerts))
-    st.dataframe(alert_df, use_container_width=True, hide_index=True, key="tbl_alerts")
+    st.dataframe(alert_df, use_container_width=True, hide_index=True)
     
     # Download: re-use the cached function with a higher limit
     export_alerts, _, _ = _api_get_alerts(disease_filter, limit=200)
@@ -617,7 +617,7 @@ else:
             forecast_table["pred_mean"]  = forecast_table["pred_mean"].round(1)
             forecast_table["pred_lower"] = forecast_table["pred_lower"].round(1)
             forecast_table["pred_upper"] = forecast_table["pred_upper"].round(1)
-            st.dataframe(forecast_table, use_container_width=True, hide_index=True, key="tbl_forecast")
+            st.dataframe(forecast_table, use_container_width=True, hide_index=True)
         
         disease_label = disease_filter if disease_filter else "ALL"
         _csv_download(

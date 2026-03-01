@@ -3,6 +3,7 @@ import subprocess
 import sys
 import time
 import os
+import signal
 from pathlib import Path
 
 def check_port_available(port):
@@ -58,7 +59,6 @@ def main():
             stdout=api_log,
             stderr=subprocess.STDOUT,
             cwd=Path(__file__).parent,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
         )
         
         print("   ✓ API server starting in background...")
@@ -104,19 +104,32 @@ def main():
         print("=" * 80)
         print()
         
-        # Start Streamlit (blocking)
-        subprocess.run([
+        # Start Streamlit (non-blocking so we can manage shutdown)
+        streamlit_process = subprocess.Popen([
             sys.executable, "-m", "streamlit", "run",
             "backend/dashboard/app.py",
             "--server.port=8501",
             "--server.address=localhost",
             "--server.headless=true"
         ])
+        
+        # Wait for Streamlit to exit (or be killed)
+        streamlit_process.wait()
     except KeyboardInterrupt:
         print("\n\n⏹️  Stopping PRISM (KeyboardInterrupt)...")
     except Exception as e:
         print(f"\n\n❌ Error occurred: {e}")
     finally:
+        # Terminate Streamlit if still running
+        if 'streamlit_process' in locals() and streamlit_process.poll() is None:
+            print("⏹️  Shutting down Dashboard...")
+            streamlit_process.terminate()
+            try:
+                streamlit_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                streamlit_process.kill()
+            print("✓ Dashboard stopped")
+        
         if api_process and api_process.poll() is None:
             print("⏹️  Shutting down API server...")
             api_process.terminate()

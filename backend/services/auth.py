@@ -1,23 +1,22 @@
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
+import bcrypt
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 from ..config import get_settings
 from ..db import get_db
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plain password against a bcrypt hashed password."""
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
-def verify_password(plain_password, hashed_password):
-    """Verify a plain password against a hashed password."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
+def get_password_hash(password: str) -> str:
     """Generate a bcrypt hash of a password."""
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create a new JWT access token."""

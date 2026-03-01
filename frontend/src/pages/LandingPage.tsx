@@ -1,20 +1,64 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Activity, Globe, ArrowRight, Command, Server, Cpu, Layers } from 'lucide-react';
+import { Shield, Activity, Globe, ArrowRight, Command, Server, Cpu, Layers, Database, Zap, BarChart3 } from 'lucide-react';
+
+// Animated counter hook
+function useCounter(target: number, duration = 2000, startOnView = true) {
+    const [count, setCount] = useState(0);
+    const [hasStarted, setHasStarted] = useState(!startOnView);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!startOnView || !ref.current) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) setHasStarted(true); },
+            { threshold: 0.3 }
+        );
+        observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, [startOnView]);
+
+    useEffect(() => {
+        if (!hasStarted) return;
+        let start = 0;
+        const increment = target / (duration / 16);
+        const timer = setInterval(() => {
+            start += increment;
+            if (start >= target) {
+                setCount(target);
+                clearInterval(timer);
+            } else {
+                setCount(Math.floor(start));
+            }
+        }, 16);
+        return () => clearInterval(timer);
+    }, [hasStarted, target, duration]);
+
+    return [count, ref] as const;
+}
 
 export function LandingPage() {
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 50);
-        };
+        const handleScroll = () => setScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    const smoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+        e.preventDefault();
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Counters
+    const [diseasesCount, diseasesRef] = useCounter(10);
+    const [statesCount, statesRef] = useCounter(28);
+    const [endpointsCount, endpointsRef] = useCounter(20);
+    const [uptimeCount, uptimeRef] = useCounter(99);
+
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-indigo-500/30">
+        <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-indigo-500/30 scroll-smooth">
             {/* Navigation */}
             <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50 py-4' : 'bg-transparent py-6'}`}>
                 <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
@@ -27,6 +71,8 @@ export function LandingPage() {
                         </span>
                     </div>
                     <div className="flex items-center gap-6">
+                        <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="hidden sm:inline text-sm font-medium text-slate-400 hover:text-white transition-colors">Features</a>
+                        <a href="#how-it-works" onClick={(e) => smoothScroll(e, 'how-it-works')} className="hidden sm:inline text-sm font-medium text-slate-400 hover:text-white transition-colors">How It Works</a>
                         <Link to="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
                             Sign In
                         </Link>
@@ -48,7 +94,7 @@ export function LandingPage() {
 
                 <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
                     <div className="text-center max-w-4xl mx-auto">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700/50 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-8 animate-fade-in-up">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700/50 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-8">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
@@ -72,7 +118,7 @@ export function LandingPage() {
                                 Access Platform
                                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                             </Link>
-                            <a href="#features" className="w-full sm:w-auto px-8 py-4 bg-slate-800/50 hover:bg-slate-800 text-white rounded-full font-semibold text-lg border border-slate-700 transition-all flex items-center justify-center">
+                            <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="w-full sm:w-auto px-8 py-4 bg-slate-800/50 hover:bg-slate-800 text-white rounded-full font-semibold text-lg border border-slate-700 transition-all flex items-center justify-center">
                                 Explore Features
                             </a>
                         </div>
@@ -84,7 +130,6 @@ export function LandingPage() {
                         <div className="relative rounded-2xl border border-slate-800/60 bg-slate-900/50 backdrop-blur-sm p-2 shadow-2xl">
                             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
                             <div className="rounded-xl overflow-hidden border border-slate-800 bg-[#0f172a] aspect-[16/9] flex items-center justify-center relative">
-                                {/* Decorative mock UI elements */}
                                 <div className="absolute inset-0 p-8 grid grid-cols-3 gap-6 opacity-40">
                                     <div className="col-span-2 space-y-6">
                                         <div className="h-48 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-end p-4 gap-2">
@@ -112,13 +157,81 @@ export function LandingPage() {
                                         </div>
                                     </div>
                                 </div>
-                                {/* Center generic globe logo to imply maps */}
                                 <Globe className="w-24 h-24 text-indigo-500/20 absolute" strokeWidth={1} />
                             </div>
                         </div>
                     </div>
                 </div>
             </main>
+
+            {/* Stats Section */}
+            <section className="py-16 border-t border-b border-slate-800/50 bg-slate-900/30">
+                <div className="max-w-7xl mx-auto px-6 md:px-12">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                        <div ref={diseasesRef} className="space-y-2">
+                            <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+                                {diseasesCount}+
+                            </div>
+                            <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">Diseases Tracked</p>
+                        </div>
+                        <div ref={statesRef} className="space-y-2">
+                            <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
+                                {statesCount}
+                            </div>
+                            <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">States Monitored</p>
+                        </div>
+                        <div ref={endpointsRef} className="space-y-2">
+                            <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-400">
+                                {endpointsCount}+
+                            </div>
+                            <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">API Endpoints</p>
+                        </div>
+                        <div ref={uptimeRef} className="space-y-2">
+                            <div className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">
+                                {uptimeCount}%
+                            </div>
+                            <p className="text-sm text-slate-400 uppercase tracking-wider font-medium">Uptime SLA</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* How It Works Section */}
+            <section id="how-it-works" className="py-24 relative z-10">
+                <div className="max-w-7xl mx-auto px-6 md:px-12">
+                    <div className="text-center mb-16 max-w-2xl mx-auto">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-4">How PRISM Works</h2>
+                        <p className="text-slate-400">From raw data to actionable intelligence in three steps.</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8 relative">
+                        {/* Connector line */}
+                        <div className="hidden md:block absolute top-12 left-[17%] right-[17%] h-px bg-gradient-to-r from-indigo-500/50 via-purple-500/50 to-emerald-500/50" />
+
+                        <StepCard
+                            step={1}
+                            icon={<Database className="w-6 h-6 text-indigo-400" />}
+                            title="Data Ingestion"
+                            description="Epidemiological case data flows in from CSV imports, automated feeds, and news intelligence — processed and stored in MongoDB."
+                            color="from-indigo-500 to-blue-500"
+                        />
+                        <StepCard
+                            step={2}
+                            icon={<Zap className="w-6 h-6 text-purple-400" />}
+                            title="Risk Analysis"
+                            description="ARIMA/SARIMA models compute forecasts, risk scores factor in growth rates, volatility, and climate patterns to generate real-time alerts."
+                            color="from-purple-500 to-pink-500"
+                        />
+                        <StepCard
+                            step={3}
+                            icon={<BarChart3 className="w-6 h-6 text-emerald-400" />}
+                            title="Actionable Intelligence"
+                            description="Decision-makers view heatmaps, resource predictions, and automated reports — enabling proactive public health responses."
+                            color="from-emerald-500 to-green-500"
+                        />
+                    </div>
+                </div>
+            </section>
 
             {/* Features Section */}
             <section id="features" className="py-24 relative z-10 border-t border-slate-800/50 bg-slate-950/50">
@@ -132,52 +245,91 @@ export function LandingPage() {
                         <FeatureCard
                             icon={<Activity className="w-6 h-6 text-indigo-400" />}
                             title="Predictive Forecasting"
-                            description="Utilize advanced ML models to predict outbreak trajectories days in advance, allowing for proactive rather than reactive measures."
+                            description="Utilize ARIMA/SARIMA models to predict outbreak trajectories days in advance, allowing for proactive measures."
                         />
                         <FeatureCard
                             icon={<Shield className="w-6 h-6 text-emerald-400" />}
                             title="Resource Optimization"
-                            description="Predictive allocation of beds, ventilators, and medical personnel across regions based on anticipated surge mapping."
+                            description="Predictive allocation of beds, ICU, nurses, and oxygen across regions based on anticipated surge mapping."
                         />
                         <FeatureCard
                             icon={<Globe className="w-6 h-6 text-blue-400" />}
                             title="Real-time Operational Map"
-                            description="Live geospatial intelligence visualizing active threats, regional vulnerabilities, and current deployment statuses."
+                            description="Live geospatial intelligence visualizing active threats, regional vulnerabilities, and deployment statuses."
                         />
                         <FeatureCard
                             icon={<Server className="w-6 h-6 text-purple-400" />}
                             title="Data Ingestion Engine"
-                            description="Automated scraping and processing of structured and unstructured health data from global and regional sources."
+                            description="Automated processing of structured and unstructured health data from global and regional sources."
                         />
                         <FeatureCard
                             icon={<Cpu className="w-6 h-6 text-rose-400" />}
-                            title="AI-Powered Reports"
-                            description="Generate comprehensive, actionable PDF briefings instantaneously using LLM-assisted synthesis of current metrics."
+                            title="Automated Reports"
+                            description="Generate comprehensive PDF briefings instantaneously with synthesis of current metrics and forecasts."
                         />
                         <FeatureCard
                             icon={<Layers className="w-6 h-6 text-amber-400" />}
-                            title="Unified Architecture"
-                            description="Secure, scalable infrastructure handling everything from raw data pipelines to high-performance frontend visualization."
+                            title="Multi-Disease Support"
+                            description="Track 10+ diseases simultaneously with disease-isolated data pipelines and configurable risk thresholds."
                         />
                     </div>
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="border-t border-slate-800 py-12 text-center text-slate-500">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                    <Command className="w-5 h-5 text-indigo-500" />
-                    <span className="font-semibold text-slate-300">PRISM</span>
+            {/* CTA Section */}
+            <section className="py-24 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 via-purple-600/5 to-blue-600/10" />
+                <div className="max-w-4xl mx-auto px-6 md:px-12 text-center relative z-10">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Deploy Intelligence?</h2>
+                    <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
+                        Join the next generation of public health command centers. Start monitoring, forecasting, and responding today.
+                    </p>
+                    <Link to="/login" className="inline-flex items-center gap-2 px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] group">
+                        Launch PRISM Command
+                        <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                    </Link>
                 </div>
-                <p>© {new Date().getFullYear()} PRISM Command Platform. All rights reserved.</p>
+            </section>
+
+            {/* Footer */}
+            <footer className="border-t border-slate-800 py-12">
+                <div className="max-w-7xl mx-auto px-6 md:px-12">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-2">
+                            <Command className="w-5 h-5 text-indigo-500" />
+                            <span className="font-semibold text-slate-300">PRISM</span>
+                        </div>
+                        <div className="flex items-center gap-8 text-sm text-slate-500">
+                            <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="hover:text-slate-300 transition-colors">Features</a>
+                            <a href="#how-it-works" onClick={(e) => smoothScroll(e, 'how-it-works')} className="hover:text-slate-300 transition-colors">How It Works</a>
+                            <a href="https://github.com/singhuday26/PRISM" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300 transition-colors">GitHub</a>
+                        </div>
+                        <p className="text-sm text-slate-500">© {new Date().getFullYear()} PRISM Command Platform</p>
+                    </div>
+                </div>
             </footer>
         </div>
     );
 }
 
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
+function StepCard({ step, icon, title, description, color }: { step: number; icon: React.ReactNode; title: string; description: string; color: string }) {
     return (
-        <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition-colors group">
+        <div className="relative text-center group">
+            <div className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${color} p-[1px] mx-auto mb-6 group-hover:scale-105 transition-transform`}>
+                <div className="w-full h-full rounded-2xl bg-slate-950 flex flex-col items-center justify-center gap-1">
+                    {icon}
+                    <span className="text-xs font-bold text-slate-500">STEP {step}</span>
+                </div>
+            </div>
+            <h3 className="text-xl font-semibold mb-3 text-slate-200">{title}</h3>
+            <p className="text-slate-400 leading-relaxed text-sm">{description}</p>
+        </div>
+    );
+}
+
+function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+    return (
+        <div className="p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-slate-700 transition-all hover:translate-y-[-2px] group">
             <div className="w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 {icon}
             </div>
