@@ -24,6 +24,9 @@ python -m venv .venv
 # Activate — macOS / Linux
 source .venv/bin/activate
 
+# Kill process
+taskkill /IM uvicorn.exe /F
+
 pip install -r requirements.txt
 ```
 
