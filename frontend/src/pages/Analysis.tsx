@@ -27,7 +27,7 @@ export function Analysis() {
   const [forecasts, setForecasts] = useState<ForecastsResponse | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationSummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const [regionId, setRegionId] = useState("IN-MH");
+  const [regionId, setRegionId] = useState(""); // empty = all regions
   const [disease, setDisease] = useState("DENGUE");
   const [regions, setRegions] = useState<Region[]>([]);
   const [diseases, setDiseases] = useState<DiseaseInfo[]>([]);
@@ -52,7 +52,7 @@ export function Analysis() {
     setLoading(true);
     try {
       const [forecastData, evalData] = await Promise.all([
-        fetchLatestForecasts(regionId, disease),
+        fetchLatestForecasts(regionId || undefined, disease),
         fetchEvaluationSummary(disease),
       ]);
       setForecasts(forecastData);
@@ -84,14 +84,12 @@ export function Analysis() {
             onChange={(e) => setRegionId(e.target.value)}
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
           >
+            <option value="" className="bg-gray-900">All Regions</option>
             {regions.map((r) => (
               <option key={r.region_id} value={r.region_id} className="bg-gray-900">
                 {r.region_name}
               </option>
             ))}
-            {regions.length === 0 && (
-              <option value="IN-MH" className="bg-gray-900">Maharashtra</option>
-            )}
           </select>
           <select
             value={disease}
@@ -169,8 +167,15 @@ export function Analysis() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500 bg-white/5 rounded-lg border border-dashed border-white/10">
-              No forecast data available for this selection
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-500 bg-white/5 rounded-lg border border-dashed border-white/10 p-6">
+              <span className="text-2xl">📊</span>
+              <p className="text-sm font-medium">No forecast data for this selection</p>
+              {regionId && (
+                <p className="text-xs text-gray-600 text-center max-w-xs">
+                  ARIMA forecasts may not have been generated for <strong className="text-gray-400">{regionId}</strong>.
+                  Try selecting <strong className="text-gray-400">All Regions</strong> or run the pipeline from the Dashboard.
+                </p>
+              )}
             </div>
           )}
         </div>

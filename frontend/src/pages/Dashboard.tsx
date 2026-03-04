@@ -9,7 +9,8 @@ import {
   type DiseaseInfo,
 } from "../lib/api";
 import EarlyWarningFeed from "../components/EarlyWarningFeed";
-import { AlertTriangle, MapPin, Activity, BarChart2, Play, RefreshCw } from "lucide-react";
+import PipelineExecutionPanel from "../components/PipelineExecutionPanel";
+import { AlertTriangle, MapPin, Activity, BarChart2 } from "lucide-react";
 
 const OperationalMap = lazy(() =>
   import("../components/OperationalMap").then((m) => ({
@@ -61,8 +62,6 @@ export function Dashboard() {
   const [alertCount, setAlertCount] = useState(0);
   const [regionsCount, setRegionsCount] = useState(0);
   const [avgMape, setAvgMape] = useState<number | null>(null);
-  const [pipelineRunning, setPipelineRunning] = useState(false);
-  const [pipelineStatus, setPipelineStatus] = useState<string | null>(null);
 
   const loadMetrics = useCallback(async () => {
     try {
@@ -98,25 +97,7 @@ export function Dashboard() {
     return () => clearInterval(interval);
   }, [loadMetrics]);
 
-  const runPipeline = async () => {
-    setPipelineRunning(true);
-    setPipelineStatus(null);
-    try {
-      const response = await fetch(`/api/pipeline/run?disease=${disease}`, {
-        method: "POST",
-      });
-      if (response.ok) {
-        setPipelineStatus("Pipeline completed successfully!");
-        setTimeout(() => { loadMetrics(); setPipelineStatus(null); }, 3000);
-      } else {
-        setPipelineStatus("Pipeline failed. Check backend logs.");
-      }
-    } catch {
-      setPipelineStatus("Pipeline request failed.");
-    } finally {
-      setPipelineRunning(false);
-    }
-  };
+
 
   return (
     <div className="space-y-8">
@@ -159,28 +140,13 @@ export function Dashboard() {
               <option value="DENGUE" className="bg-gray-900">Dengue Fever</option>
             )}
           </select>
-          <button
-            onClick={runPipeline}
-            disabled={pipelineRunning}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition-colors"
-            title="Run analytics pipeline"
-          >
-            {pipelineRunning ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Play className="w-4 h-4" />
-            )}
-            <span className="hidden sm:inline">Pipeline</span>
-          </button>
         </div>
       </div>
 
-      {/* Pipeline status toast */}
-      {pipelineStatus && (
-        <div className={`p-3 rounded-lg text-sm font-medium ${pipelineStatus.includes("success") ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-red-500/10 text-red-400 border border-red-500/20"}`}>
-          {pipelineStatus}
-        </div>
-      )}
+      {/* Pipeline Execution Panel */}
+      <PipelineExecutionPanel disease={disease} onComplete={loadMetrics} />
+
+
 
       {/* Summary Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

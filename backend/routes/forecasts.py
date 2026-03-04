@@ -102,37 +102,41 @@ def latest(
         db = get_db()
         col = db["forecasts_daily"]
 
-        filter_query = {}
-        if validated_disease:
-            filter_query["disease"] = validated_disease
-        
-        latest_doc = col.find_one(filter_query, sort=[("generated_at", DESCENDING)])
-        if not latest_doc:
-            logger.warning(f"No forecasts found in database{' for disease: ' + validated_disease if validated_disease else ''}")
-            return {"date": None, "forecasts": [], "count": 0}
-
-        latest_gen = latest_doc["generated_at"]
-        query = {"generated_at": latest_gen}
-        if region_id:
-            query["region_id"] = region_id.strip().upper()
+        # Build query — scope to disease and optional region
+        query: dict = {}
         if validated_disease:
             query["disease"] = validated_disease
-            
-        logger_msg = f"Fetching latest forecasts with horizon {horizon}"
         if region_id:
-            logger_msg = f"Fetching latest forecasts for region: {region_id}"
-        if validated_disease:
-            logger_msg += f" for disease: {validated_disease}"
-        logger.info(logger_msg)
+            query["region_id"] = region_id.strip().upper()
 
+        # Get the most recent `horizon` forecasts by descending date,
+        # then reverse so they're returned chronologically ascending.
+        # This avoids the brittle generated_at batch-matching approach.
         docs = list(
             col.find(query, {"_id": 0})
-            .sort("date", ASCENDING)
+            .sort("date", DESCENDING)
             .limit(horizon)
         )
-        resolved_date = docs[0]["date"] if docs else None
-        
+
+        if not docs:
+            logger.warning(
+                f"No forecasts found"
+                f"{' for region: ' + region_id if region_id else ''}"
+                f"{' disease: ' + validated_disease if validated_disease else ''}"
+            )
+            return {"date": None, "forecasts": [], "count": 0}
+
+        # Reverse to get chronological order
+        docs = list(reversed(docs))
+        resolved_date = docs[0]["date"]
+
+        logger.info(
+            f"Returning {len(docs)} forecasts"
+            f"{' for region: ' + region_id if region_id else ''}"
+            f"{' disease: ' + validated_disease if validated_disease else ''}"
+        )
         return {"date": resolved_date, "forecasts": docs, "count": len(docs)}
+
     except (DateValidationError, DiseaseValidationError) as e:
         handle_validation_error(e)
     except PyMongoError as e:
@@ -147,6 +151,7 @@ def latest(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred",
         )
+
 
 
 @router.post("/generate-arima", response_model=ForecastsResponse)
