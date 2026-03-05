@@ -5,6 +5,7 @@ import { Analysis } from "./pages/Analysis";
 import { Resources } from "./pages/Resources";
 import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
+import { AdminProfile } from "./pages/AdminProfile";
 import { LoginPage } from "./pages/LoginPage";
 import { LandingPage } from "./pages/LandingPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -48,6 +49,7 @@ function App() {
             <Route path="resources" element={<Resources />} />
             <Route path="reports" element={<Reports />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<AdminProfile />} />
             <Route path="*" element={<Navigate to="/app" replace />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />

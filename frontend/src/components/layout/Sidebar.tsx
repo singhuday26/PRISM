@@ -4,6 +4,7 @@ import {
     Package,
     FileText,
     Settings,
+    UserCircle,
     X,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -28,6 +29,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { icon: Package, label: "Resources", path: "/app/resources" },
         { icon: FileText, label: "Reports", path: "/app/reports" },
         { icon: Settings, label: "Settings", path: "/app/settings" },
+        { icon: UserCircle, label: "Profile", path: "/app/profile" },
     ];
 
     return (

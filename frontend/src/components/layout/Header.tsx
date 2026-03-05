@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, Bell, CheckCircle, LogOut, Menu } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle, LogOut, Menu, UserCircle } from "lucide-react";
 import { fetchAlerts, type Alert } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const SEVERITY_STYLES: Record<
   string,
@@ -40,6 +41,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAlerts(undefined, undefined, 5)
@@ -138,13 +140,20 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           </button>
 
           {isProfileOpen && (
-            <div className="absolute top-full right-0 mt-2 w-48 bg-[hsl(240,10%,10%)] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50 py-1">
+            <div className="absolute top-full right-0 mt-2 w-52 bg-[hsl(240,10%,10%)] border border-white/10 rounded-lg shadow-xl overflow-hidden z-50 py-1">
               <div className="px-4 py-2 text-xs text-gray-400 uppercase tracking-wider border-b border-white/10 mb-1">
                 Account
               </div>
               <button
+                onClick={() => { setIsProfileOpen(false); navigate("/app/profile"); }}
+                className="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-white/5 flex items-center gap-2 transition-colors"
+              >
+                <UserCircle className="w-4 h-4 text-blue-400" />
+                My Profile
+              </button>
+              <button
                 onClick={logout}
-                className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+                className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out

@@ -3,10 +3,12 @@ import { BedShortageWidget } from "../components/BedShortageWidget";
 import {
   fetchAlerts,
   fetchDiseases,
+  fetchRegions,
   type Alert,
   type DiseaseInfo,
+  type Region,
 } from "../lib/api";
-import { AlertTriangle, Plus, Search, Activity } from "lucide-react";
+import { AlertTriangle, Plus, Activity, ChevronDown } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { Skeleton } from "../components/ui/Skeleton";
 
@@ -14,11 +16,14 @@ export function Resources() {
   const [criticalRegions, setCriticalRegions] = useState<string[]>([]);
   const [customRegionsList, setCustomRegionsList] = useState<string[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
-  const [customRegionInput, setCustomRegionInput] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState("");
   const [disease, setDisease] = useState("DENGUE");
   const [diseases, setDiseases] = useState<DiseaseInfo[]>([]);
+  const [allRegions, setAllRegions] = useState<Region[]>([]);
+  const [regionsLoading, setRegionsLoading] = useState(true);
   const { error, info } = useToast();
 
+  // Load diseases
   useEffect(() => {
     fetchDiseases()
       .then((d) => setDiseases(d.diseases))
@@ -28,6 +33,21 @@ export function Resources() {
       });
   }, [error]);
 
+  // Load all available regions for the dropdown
+  useEffect(() => {
+    setRegionsLoading(true);
+    fetchRegions()
+      .then((r) => {
+        setAllRegions(r.regions);
+      })
+      .catch((e) => {
+        console.error(e);
+        error("Failed to load regions list");
+      })
+      .finally(() => setRegionsLoading(false));
+  }, [error]);
+
+  // Load critical regions based on alerts
   useEffect(() => {
     let active = true;
     async function loadCriticalRegions() {
@@ -64,16 +84,28 @@ export function Resources() {
   }, [disease]);
 
   const addRegion = () => {
-    if (customRegionInput) {
-      const regionId = customRegionInput.toUpperCase();
+    if (selectedRegion) {
+      const regionId = selectedRegion.toUpperCase();
       if (!criticalRegions.includes(regionId) && !customRegionsList.includes(regionId)) {
         setCustomRegionsList([...customRegionsList, regionId]);
       }
-      setCustomRegionInput("");
+      setSelectedRegion("");
     }
   };
 
+  const removeCustomRegion = (regionId: string) => {
+    setCustomRegionsList(customRegionsList.filter((r) => r !== regionId));
+  };
+
   const displayRegions = Array.from(new Set([...criticalRegions, ...customRegionsList]));
+
+  // Build set of already-monitored region IDs
+  const monitoredSet = new Set(displayRegions.map((r) => r.toUpperCase()));
+
+  // Regions available in dropdown = all regions not already monitored
+  const availableRegions = allRegions.filter(
+    (r) => !monitoredSet.has(r.region_id.toUpperCase()),
+  );
 
   return (
     <div className="space-y-8">
@@ -87,40 +119,59 @@ export function Resources() {
           </p>
         </div>
         <div className="flex gap-4 items-center">
-          <select
-            value={disease}
-            onChange={(e) => setDisease(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-          >
-            {diseases.map((d) => (
-              <option key={d.disease_id} value={d.disease_id} className="bg-gray-900">
-                {d.name}
-              </option>
-            ))}
-            {diseases.length === 0 && (
-              <option value="DENGUE" className="bg-gray-900">Dengue Fever</option>
-            )}
-          </select>
+          {/* Disease Selector */}
+          <div className="relative">
+            <select
+              value={disease}
+              onChange={(e) => setDisease(e.target.value)}
+              className="appearance-none bg-white/5 border border-white/10 rounded-lg pl-3 pr-8 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer"
+            >
+              {diseases.map((d) => (
+                <option key={d.disease_id} value={d.disease_id} className="bg-gray-900">
+                  {d.name}
+                </option>
+              ))}
+              {diseases.length === 0 && (
+                <option value="DENGUE" className="bg-gray-900">Dengue Fever</option>
+              )}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          </div>
         </div>
       </div>
 
-      {/* Add Custom Region */}
-      <div className="glass-card p-4 border border-white/5 rounded-xl flex gap-4 items-center focus-within:border-blue-500/50 transition-colors">
-        <Search className="w-5 h-5 text-gray-400 ml-2" />
-        <input
-          type="text"
-          placeholder="Monitor Specific Region ID (e.g., IN-MH)..."
-          value={customRegionInput}
-          onChange={(e) => setCustomRegionInput(e.target.value)}
-          className="bg-transparent border-none outline-none text-white flex-1 placeholder:text-gray-500"
-          onKeyDown={(e) => e.key === "Enter" && addRegion()}
-        />
+      {/* Add Custom Region — Dropdown */}
+      <div className="glass-card p-4 border border-white/5 rounded-xl flex flex-col sm:flex-row gap-3 items-stretch sm:items-center focus-within:border-blue-500/50 transition-colors">
+        <div className="flex-1 relative">
+          <select
+            value={selectedRegion}
+            onChange={(e) => setSelectedRegion(e.target.value)}
+            disabled={regionsLoading}
+            className="w-full appearance-none bg-white/5 border border-white/10 rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="" className="bg-gray-900 text-gray-400">
+              {regionsLoading ? "Loading regions…" : "Select a region to monitor…"}
+            </option>
+            {availableRegions.map((r) => (
+              <option key={r.region_id} value={r.region_id} className="bg-gray-900">
+                {r.region_name} ({r.region_id})
+              </option>
+            ))}
+            {!regionsLoading && availableRegions.length === 0 && allRegions.length > 0 && (
+              <option disabled className="bg-gray-900 text-gray-500">
+                All regions are already being monitored
+              </option>
+            )}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        </div>
         <button
           onClick={addRegion}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-medium text-sm"
+          disabled={!selectedRegion}
+          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium text-sm"
         >
           <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">Add Region</span>
+          <span>Add Region</span>
         </button>
       </div>
 
@@ -138,16 +189,35 @@ export function Resources() {
           </div>
         ) : displayRegions.length > 0 ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {displayRegions.map((regionId) => (
-              <div key={regionId} className="relative group">
-                <div className="absolute -left-3 top-4 bottom-4 w-1 bg-gradient-to-b from-blue-500/50 to-indigo-500/50 rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                <BedShortageWidget
-                  regionId={regionId}
-                  disease={disease}
-                  capacityThreshold={150} // Higher threshold for critical 
-                />
-              </div>
-            ))}
+            {displayRegions.map((regionId) => {
+              const regionInfo = allRegions.find(
+                (r) => r.region_id.toUpperCase() === regionId.toUpperCase(),
+              );
+              const isCustom = customRegionsList.includes(regionId);
+              return (
+                <div key={regionId} className="relative group">
+                  <div className="absolute -left-3 top-4 bottom-4 w-1 bg-gradient-to-b from-blue-500/50 to-indigo-500/50 rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
+                  {isCustom && (
+                    <button
+                      onClick={() => removeCustomRegion(regionId)}
+                      className="absolute top-3 right-3 z-10 text-xs text-gray-500 hover:text-red-400 transition-colors bg-white/5 hover:bg-red-500/10 rounded px-2 py-0.5 border border-white/10"
+                    >
+                      Remove
+                    </button>
+                  )}
+                  {regionInfo && (
+                    <p className="text-xs text-gray-500 pl-1 mb-1">
+                      {regionInfo.region_name}
+                    </p>
+                  )}
+                  <BedShortageWidget
+                    regionId={regionId}
+                    disease={disease}
+                    capacityThreshold={150}
+                  />
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="glass-card p-16 text-center text-gray-500 border border-white/5 rounded-xl border-dashed">
@@ -156,7 +226,7 @@ export function Resources() {
             </div>
             <h3 className="text-lg font-medium text-slate-300 mb-2">No Critical Shortages</h3>
             <p className="max-w-md mx-auto">
-              System health is stable. Try adding a custom region ID above to manually monitor its resource capacity.
+              System health is stable. Use the dropdown above to manually add a region for monitoring.
             </p>
           </div>
         )}

@@ -53,7 +53,7 @@ export function Analysis() {
     try {
       const [forecastData, evalData] = await Promise.all([
         fetchLatestForecasts(regionId || undefined, disease),
-        fetchEvaluationSummary(disease),
+        fetchEvaluationSummary(disease, 7, "monthly"),
       ]);
       setForecasts(forecastData);
       setEvaluation(evalData);
@@ -203,29 +203,54 @@ export function Analysis() {
             </div>
           ) : evaluation ? (
             <div className="space-y-6">
+              {/* Top-level aggregate metrics */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center flex flex-col items-center justify-center">
+                <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 text-center flex flex-col items-center justify-center">
                   <div className="text-3xl font-bold text-white mb-1">
                     {evaluation.aggregate_mae != null ? evaluation.aggregate_mae.toFixed(1) : "—"}
                   </div>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
-                    Mean Abs Error
-                  </div>
+                  <div className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Mean Abs Error</div>
                 </div>
-                <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center flex flex-col items-center justify-center">
+                <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 text-center flex flex-col items-center justify-center">
                   <div className="text-3xl font-bold text-white mb-1">
                     {evaluation.aggregate_mape != null ? `${(evaluation.aggregate_mape * 100).toFixed(1)}%` : "—"}
                   </div>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
-                    MAPE
-                  </div>
+                  <div className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">MAPE</div>
                 </div>
               </div>
 
+              {/* Secondary metrics from top region */}
+              {evaluation.top_regions && evaluation.top_regions.length > 0 && (() => {
+                const best = evaluation.top_regions[0];
+                return (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                      <div className="text-lg font-bold text-emerald-400">
+                        {best.rmse != null ? best.rmse.toFixed(1) : "—"}
+                      </div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-0.5">RMSE</div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                      <div className="text-lg font-bold text-amber-400">
+                        {best.mse != null ? best.mse.toFixed(1) : "—"}
+                      </div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-0.5">MSE</div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+                      <div className="text-lg font-bold text-indigo-400">
+                        {best.r2 != null ? best.r2.toFixed(3) : "—"}
+                      </div>
+                      <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-0.5">R²</div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Per-region leaderboard */}
               <div>
                 <h4 className="text-sm font-medium text-gray-400 mb-3 flex items-center justify-between">
                   <span>Top Performing Regions</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300">By Error %</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-gray-300">By MAE</span>
                 </h4>
                 <div className="space-y-2">
                   {evaluation.top_regions?.slice(0, 5).map((region, i) => (
@@ -234,20 +259,31 @@ export function Analysis() {
                       className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-white/5 transition-colors border border-transparent hover:border-white/5"
                     >
                       <span className="text-sm text-gray-300 font-medium flex items-center gap-3">
-                        <span className="text-gray-600 text-xs w-4">{i + 1}.</span> {region.region_id}
+                        <span className="text-gray-600 text-xs w-4">{i + 1}.</span>
+                        {region.region_id}
                       </span>
-                      <span className="text-sm font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                        {(region.mape * 100).toFixed(1)}%
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-gray-500">
+                          MAE {region.mae?.toFixed(1) ?? "—"}
+                        </span>
+                        <span className="text-sm font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                          {region.mape != null ? `${(region.mape * 100).toFixed(1)}%` : "—"}
+                        </span>
+                      </div>
                     </div>
                   ))}
                   {(!evaluation.top_regions || evaluation.top_regions.length === 0) && (
                     <div className="text-sm text-gray-500 text-center py-4 border border-dashed border-white/10 rounded-lg">
-                      No region evaluation data
+                      No region evaluation data available
                     </div>
                   )}
                 </div>
               </div>
+
+              {/* Regions evaluated count */}
+              <p className="text-xs text-gray-600 text-right">
+                {evaluation.regions_evaluated} region{evaluation.regions_evaluated !== 1 ? "s" : ""} evaluated
+              </p>
             </div>
           ) : (
             <div className="text-gray-500 text-center py-8">

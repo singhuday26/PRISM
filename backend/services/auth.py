@@ -45,3 +45,27 @@ def authenticate_user(username: str, password: str):
     if not verify_password(password, user["hashed_password"]):
         return False
     return user
+
+def update_user(username: str, update_data: dict) -> Optional[dict]:
+    """Update a user's profile fields (username, email) by their current username."""
+    db = get_db()
+    # Build update dict with only provided fields
+    set_fields = {k: v for k, v in update_data.items() if v is not None}
+    if not set_fields:
+        return get_user_by_username(username)
+    db["users"].update_one({"username": username}, {"$set": set_fields})
+    # If username was changed, fetch by new username
+    new_username = set_fields.get("username", username)
+    return get_user_by_username(new_username)
+
+def change_password(username: str, current_password: str, new_password: str) -> bool:
+    """Verify current password and update to a new hashed password. Returns True on success."""
+    user = get_user_by_username(username)
+    if not user:
+        return False
+    if not verify_password(current_password, user["hashed_password"]):
+        return False
+    new_hash = get_password_hash(new_password)
+    db = get_db()
+    db["users"].update_one({"username": username}, {"$set": {"hashed_password": new_hash}})
+    return True
