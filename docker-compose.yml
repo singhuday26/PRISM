@@ -35,6 +35,8 @@ services:
       - "8501:8501"
     environment:
       - API_BASE_URL=http://api:8000
+      - API_URL=http://api:8000
+      - PUBLIC_API_URL=http://localhost:8000
       - MONGO_URI=mongodb://db:27017/prism_db
     depends_on:
       - api
