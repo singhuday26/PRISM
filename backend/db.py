@@ -142,6 +142,11 @@ def ensure_indexes() -> None:
         db["users"].create_index("email", unique=True)
         logger.info("Created unique indexes on users (username, email)")
 
+        # Pipeline Status: unique task_id for tracking background jobs
+        db["pipeline_status"].create_index("task_id", unique=True)
+        db["pipeline_status"].create_index([("disease", ASCENDING), ("status", ASCENDING)])
+        logger.info("Created indexes on pipeline_status (task_id, disease, status)")
+
         # News Articles: unique title and performance indexes
         db["news_articles"].create_index("title", unique=True)
         db["news_articles"].create_index([("extracted_diseases", ASCENDING)])

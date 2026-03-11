@@ -1,0 +1,50 @@
+services:
+  db:
+    image: mongo:latest
+    container_name: prism-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - prism-data:/data/db
+    networks:
+      - prism-network
+    restart: always
+
+  api:
+    build: .
+    container_name: prism-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://db:27017/prism_db
+      - DB_NAME=prism_db
+      - LOG_LEVEL=INFO
+      - ENABLE_CORS=true
+      - CORS_ORIGINS=*
+    depends_on:
+      - db
+    networks:
+      - prism-network
+    restart: always
+
+  dashboard:
+    build: .
+    container_name: prism-dashboard
+    command: streamlit run backend/dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://api:8000
+      - MONGO_URI=mongodb://db:27017/prism_db
+    depends_on:
+      - api
+    networks:
+      - prism-network
+    restart: always
+
+volumes:
+  prism-data:
+
+networks:
+  prism-network:
+    driver: bridge

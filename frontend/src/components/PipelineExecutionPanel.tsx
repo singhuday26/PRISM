@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import {
     runPipeline as apiRunPipeline,
-    type PipelineRunResponse,
+    fetchTaskStatus,
+    type PipelineTaskStatus,
     type PipelineStepResult,
 } from "../lib/api";
 
@@ -73,10 +74,10 @@ export default function PipelineExecutionPanel({
 }: PipelineExecutionPanelProps) {
     const [panelState, setPanelState] = useState<PanelState>("idle");
     const [expanded, setExpanded] = useState(false);
-    const [response, setResponse] = useState<PipelineRunResponse | null>(null);
+    const [taskStatus, setTaskStatus] = useState<PipelineTaskStatus | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [steps, setSteps] = useState<StepDisplay[]>([]);
-    const [currentStepIdx, setCurrentStepIdx] = useState(-1);
+    const pollingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     /* Auto-collapse after 20s of done/idle */
@@ -86,74 +87,77 @@ export default function PipelineExecutionPanel({
         }
         return () => {
             if (collapseTimer.current) clearTimeout(collapseTimer.current);
+            if (pollingInterval.current) clearInterval(pollingInterval.current);
         };
     }, [panelState]);
 
-    /* Simulate step progression while waiting for the API */
-    const animateSteps = useCallback(async () => {
-        const initial: StepDisplay[] = STEP_ORDER.map((name) => ({
-            name,
-            uiState: "pending",
-        }));
-        setSteps(initial);
+    const pollStatus = useCallback(async (taskId: string) => {
+        try {
+            const status = await fetchTaskStatus(taskId);
+            setTaskStatus(status);
 
-        for (let i = 0; i < STEP_ORDER.length; i++) {
-            setCurrentStepIdx(i);
-            setSteps((prev) =>
-                prev.map((s, idx) => (idx === i ? { ...s, uiState: "running" } : s)),
-            );
-            // Hold each step visible for at least 600ms for UX
-            await new Promise((r) => setTimeout(r, 600));
+            // Reconcile steps
+            const resSteps = status.steps ?? [];
+            const updatedSteps: StepDisplay[] = STEP_ORDER.map((name) => {
+                const real = resSteps.find((s) => s.name === name);
+                
+                let uiState: StepDisplay["uiState"] = "pending";
+                if (real) {
+                    if (real.status === "success") uiState = "success";
+                    else if (real.status === "skipped") uiState = "skipped";
+                    else if (real.status === "error") uiState = "error";
+                } else if (status.status === "processing") {
+                    // If this is the next step after the last success, mark as running
+                    const lastSuccessIdx = resSteps.length - 1;
+                    const currentStepIdx = STEP_ORDER.indexOf(name);
+                    if (currentStepIdx === lastSuccessIdx + 1) {
+                        uiState = "running";
+                    }
+                }
+
+                return { name, uiState, result: real };
+            });
+            setSteps(updatedSteps);
+
+            if (status.status === "completed") {
+                if (pollingInterval.current) clearInterval(pollingInterval.current);
+                setPanelState("done");
+                onComplete?.();
+            } else if (status.status === "failed") {
+                if (pollingInterval.current) clearInterval(pollingInterval.current);
+                setPanelState("error");
+                setErrorMsg(status.error || "Background task failed");
+            }
+        } catch (e) {
+            console.error("Polling error:", e);
+            // We don't stop polling on a single fetch error (transient network issue)
         }
-    }, []);
+    }, [onComplete]);
 
     const execute = async () => {
         setPanelState("running");
         setExpanded(true);
         setErrorMsg(null);
-        setResponse(null);
-        setCurrentStepIdx(-1);
-
-        // Start step animation (fire-and-forget — we'll reconcile with real data)
-        const animationDone = animateSteps();
+        setTaskStatus(null);
+        
+        const initialSteps: StepDisplay[] = STEP_ORDER.map((name) => ({
+            name,
+            uiState: "pending",
+        }));
+        setSteps(initialSteps);
 
         try {
-            const res = await apiRunPipeline(disease);
-            await animationDone; // wait for animation to finish
-
-            // Reconcile steps with real data (defensive: handle missing steps array)
-            const resSteps = res.steps ?? [];
-            const finalSteps: StepDisplay[] = STEP_ORDER.map((name) => {
-                const real = resSteps.find((s) => s.name === name);
-                return {
-                    name,
-                    uiState: real?.status === "success"
-                        ? "success"
-                        : real?.status === "skipped"
-                            ? "skipped"
-                            : real?.status === "error"
-                                ? "error"
-                                : "success",
-                    result: real,
-                };
-            });
-            setSteps(finalSteps);
-            setResponse(res);
-            setPanelState(res.success ? "done" : "error");
-            setCurrentStepIdx(-1);
-            onComplete?.();
+            const { task_id } = await apiRunPipeline(disease);
+            
+            // Start polling
+            if (pollingInterval.current) clearInterval(pollingInterval.current);
+            pollingInterval.current = setInterval(() => pollStatus(task_id), 1500);
+            
+            // Initial poll immediately
+            pollStatus(task_id);
         } catch (e: unknown) {
-            await animationDone;
-            setErrorMsg(e instanceof Error ? e.message : "Unknown error");
+            setErrorMsg(e instanceof Error ? e.message : "Failed to start pipeline");
             setPanelState("error");
-            // Mark remaining steps as error
-            setSteps((prev) =>
-                prev.map((s) =>
-                    s.uiState === "running" || s.uiState === "pending"
-                        ? { ...s, uiState: "error" }
-                        : s,
-                ),
-            );
         }
     };
 
@@ -206,13 +210,13 @@ export default function PipelineExecutionPanel({
                 </button>
 
                 {/* Compact status badge when collapsed */}
-                {!expanded && panelState === "done" && response && (
+                {!expanded && panelState === "done" && taskStatus && (
                     <button
                         onClick={() => setExpanded(true)}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors cursor-pointer"
                     >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Pipeline completed in {response.duration_seconds}s
+                        Pipeline completed in {taskStatus.duration_seconds}s
                         <ChevronDown className="w-3 h-3 ml-1" />
                     </button>
                 )}
@@ -244,10 +248,10 @@ export default function PipelineExecutionPanel({
                             </span>
                         </div>
                         <div className="flex items-center gap-3">
-                            {response && (
+                            {taskStatus?.duration_seconds && (
                                 <span className="flex items-center gap-1.5 text-xs text-gray-400">
                                     <Clock className="w-3 h-3" />
-                                    {response.duration_seconds}s total
+                                    {taskStatus.duration_seconds}s total
                                 </span>
                             )}
                             <button
@@ -261,13 +265,12 @@ export default function PipelineExecutionPanel({
 
                     {/* Steps */}
                     <div className="divide-y divide-white/[0.03]">
-                        {steps.map((step, idx) => {
+                        {steps.map((step) => {
                             const meta = STEP_META[step.name];
-                            const isActive = idx === currentStepIdx;
                             return (
                                 <div
                                     key={step.name}
-                                    className={`px-5 py-3.5 flex items-center gap-4 transition-colors duration-300 ${isActive
+                                    className={`px-5 py-3.5 flex items-center gap-4 transition-colors duration-300 ${step.uiState === "running"
                                         ? "bg-indigo-500/5"
                                         : step.uiState === "error"
                                             ? "bg-red-500/5"
@@ -351,31 +354,24 @@ export default function PipelineExecutionPanel({
                     )}
 
                     {/* Footer summary */}
-                    {response && panelState === "done" && (
+                    {taskStatus && panelState === "done" && (
                         <div className="px-5 py-3 bg-emerald-500/[0.03] border-t border-emerald-500/10 flex items-center justify-between">
                             <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 Pipeline completed successfully
                             </div>
                             <div className="flex items-center gap-4 text-xs text-gray-400">
-                                <span>
-                                    <strong className="text-white font-mono">
-                                        {response.created.risk_scores}
-                                    </strong>{" "}
-                                    risk
-                                </span>
-                                <span>
-                                    <strong className="text-white font-mono">
-                                        {response.created.alerts}
-                                    </strong>{" "}
-                                    alerts
-                                </span>
-                                <span>
-                                    <strong className="text-white font-mono">
-                                        {response.created.forecasts}
-                                    </strong>{" "}
-                                    forecasts
-                                </span>
+                                {taskStatus.steps.map(s => {
+                                    if (s.name === 'reset' || s.status !== 'success') return null;
+                                    return (
+                                        <span key={s.name}>
+                                            <strong className="text-white font-mono">
+                                                {s.records_created}
+                                            </strong>{" "}
+                                            {s.name.replace('_', ' ')}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
