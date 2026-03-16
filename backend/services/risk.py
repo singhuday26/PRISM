@@ -10,6 +10,7 @@ from pymongo.collection import Collection
 
 from backend.db import get_db
 from backend.utils.climate import calculate_weather_aware_risk
+from backend.services.cache import CacheService
 
 logger = logging.getLogger(__name__)
 
@@ -160,14 +161,7 @@ def compute_risk_scores(target_date: Optional[str] = None, disease: Optional[str
                        use_climate_boost: bool = True) -> Tuple[str, List[Dict]]:
     """
     Compute risk scores for all regions, optionally filtered by disease.
-    
-    Args:
-        target_date: Date to compute risk for (ISO format)
-        disease: Optional disease filter
-        use_climate_boost: Whether to apply weather-aware climate multipliers (default: True)
-    
-    Returns:
-        Tuple of (target_date, list of risk score records)
+    Uses Warm Cache (Tier 2) to avoid redundant computations.
     """
     try:
         db = get_db()
@@ -175,7 +169,7 @@ def compute_risk_scores(target_date: Optional[str] = None, disease: Optional[str
         regions_col = db["regions"]
         risk_col = db["risk_scores"]
 
-        # Build query filter
+        # Build query filter to resolve target_date if not provided
         case_filter = {}
         if disease:
             case_filter["disease"] = disease
@@ -186,6 +180,13 @@ def compute_risk_scores(target_date: Optional[str] = None, disease: Optional[str
                 logger.warning(f"No cases found in database{' for disease: ' + disease if disease else ''}")
                 return "", []
             target_date = latest_case["date"]
+
+        # Tier 2 Cache Lookup
+        cache_id = f"{target_date}:{disease or 'ALL'}:{use_climate_boost}"
+        cached_results = CacheService.get("risk_scores", cache_id)
+        if cached_results:
+            logger.info(f"Warm Cache Hit: Returning risk scores for {cache_id}")
+            return target_date, cached_results
 
         disease_info = f" for disease: {disease}" if disease else ""
         climate_info = " with climate boost" if use_climate_boost else ""
@@ -216,7 +217,7 @@ def compute_risk_scores(target_date: Optional[str] = None, disease: Optional[str
                 "risk_level": risk_level,
                 "drivers": drivers,
                 "metrics": metrics,
-                "climate_info": climate_data,  # NEW: Climate context
+                "climate_info": climate_data,
                 "updated_at": datetime.utcnow(),
             }
             if disease:
@@ -236,7 +237,11 @@ def compute_risk_scores(target_date: Optional[str] = None, disease: Optional[str
             logger.warning(f"Skipped {skipped} regions due to missing data")
         
         results.sort(key=lambda x: x.get("risk_score", 0.0), reverse=True)
-        logger.info(f"Computed {len(results)} risk scores")
+        
+        # Store in Tier 2 Cache (TTL: 10 minutes for risk scores)
+        CacheService.set("risk_scores", cache_id, results, ttl_seconds=600)
+        
+        logger.info(f"Computed and Cached {len(results)} risk scores")
         return target_date, results
     except Exception as e:
         logger.error(f"Error computing risk scores: {e}")

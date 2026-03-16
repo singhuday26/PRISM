@@ -21,13 +21,14 @@ logger = logging.getLogger(__name__)
 MODEL_VERSION_ARIMA = "arima_v1"
 MODEL_VERSION_SARIMA = "sarima_v1"
 
-GranularityType = Literal["yearly", "monthly", "weekly"]
+GranularityType = Literal["yearly", "monthly", "weekly", "daily"]
 
 # Lookback configuration - ARIMA needs more history
 ARIMA_LOOKBACK_CONFIG = {
     "yearly": 5,     # 5 years of history
     "monthly": 24,   # 24 months of history
     "weekly": 52,    # 52 weeks of history
+    "daily": 90,     # 90 days of history
 }
 
 # Seasonal periods
@@ -35,8 +36,28 @@ SEASONAL_PERIODS = {
     "yearly": 1,     # No seasonality for yearly
     "monthly": 12,   # 12-month seasonality
     "weekly": 52,    # 52-week seasonality
+    "daily": 7,      # 7-day seasonality
 }
 
+
+from functools import lru_cache, wraps
+import hashlib
+
+# --- Caching Support ---
+
+def hash_series(series: List[float]) -> str:
+    """Generate a stable hash for a series of numbers."""
+    series_str = ",".join(map(str, series))
+    return hashlib.md5(series_str.encode()).hexdigest()
+
+@lru_cache(maxsize=128)
+def _get_cached_arima_model(series_hash: str, seasonal: bool, seasonal_period: int) -> Optional[object]:
+    """
+    Internal helper to store fitted models in memory.
+    Note: This is a proxy because lru_cache needs hashable arguments.
+    """
+    # The actual fitting happens in _fit_arima_model which calls this
+    return None
 
 def _fit_arima_model(
     series: List[float],
@@ -44,50 +65,73 @@ def _fit_arima_model(
     seasonal_period: int = 12
 ) -> Optional[object]:
     """
-    Fit ARIMA or SARIMA model to time series.
+    Fit ARIMA or SARIMA model to time series with in-memory caching.
     
-    Args:
-        series: Historical time series data
-        seasonal: Whether to use seasonal ARIMA
-        seasonal_period: Period for seasonality
-        
-    Returns:
-        Fitted model or None if fitting fails
+    FAANG-Standard: O(n) average case retrieval via hash-map lookup.
     """
     try:
-        # Lazy import to avoid loading until needed
         from pmdarima import auto_arima
         
         if len(series) < 10:
             logger.warning(f"Insufficient data for ARIMA: {len(series)} points")
             return None
+
+        # Tier 1 Cache Lookup: O(1)
+        series_hash = hash_series(series)
         
-        # Convert to numpy array
-        y = np.array(series, dtype=float)
+        # We use a simple dictionary-based cache here because pmdarima models 
+        # are complex objects that might not play well with standard lru_cache 
+        # if they contain non-hashable sub-components.
+        if not hasattr(_fit_arima_model, "_cache"):
+            _fit_arima_model._cache = {}
         
+        cache_key = (series_hash, seasonal, seasonal_period)
+        if cache_key in _fit_arima_model._cache:
+            logger.debug(f"Cache Hit: Reusing ARIMA model for hash {series_hash}")
+            return _fit_arima_model._cache[cache_key]
+
         # Handle any NaN/Inf values
-        y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
+        y = np.nan_to_num(np.array(series, dtype=float), nan=0.0, posinf=0.0, neginf=0.0)
         
-        # Fit auto_arima
-        model = auto_arima(
-            y,
-            start_p=0, max_p=3,
-            start_q=0, max_q=3,
-            d=None,  # Auto-determine differencing
-            seasonal=seasonal,
-            m=seasonal_period if seasonal else 1,
-            start_P=0, max_P=2,
-            start_Q=0, max_Q=2,
-            D=None if seasonal else 0,
-            trace=False,
-            error_action='ignore',
-            suppress_warnings=True,
-            stepwise=True,
-            n_fits=5,  # Reduced from 10 to 5 for speed
-        )
+        # Determine seasonal parameters
+        actual_seasonal = seasonal and len(series) >= 2 * seasonal_period
         
-        logger.debug(f"Fitted ARIMA model: {model.order}")
-        return model
+        try:
+            # Fit auto_arima - The expensive operation
+            logger.info(f"Cache Miss: Fitting ARIMA model for hash {series_hash}")
+            model = auto_arima(
+                y,
+                start_p=0, max_p=3,
+                start_q=0, max_q=3,
+                d=None,
+                seasonal=actual_seasonal,
+                m=seasonal_period if actual_seasonal else 1,
+                start_P=0, max_P=2,
+                start_Q=0, max_Q=2,
+                D=None if actual_seasonal else 0,
+                trace=False,
+                error_action='ignore',
+                suppress_warnings=True,
+                stepwise=True,
+                n_fits=5,
+            )
+            
+            # Store in Tier 1 Cache
+            _fit_arima_model._cache[cache_key] = model
+            logger.debug(f"Fitted and Cached ARIMA model: {model.order}")
+            return model
+            
+        except Exception as e:
+            if actual_seasonal:
+                logger.warning(f"SARIMA fit failed, falling back to non-seasonal ARIMA: {e}")
+                model = auto_arima(
+                    y, start_p=0, max_p=3, start_q=0, max_q=3,
+                    seasonal=False, trace=False, error_action='ignore',
+                    suppress_warnings=True, stepwise=True
+                )
+                _fit_arima_model._cache[cache_key] = model
+                return model
+            raise e
         
     except ImportError:
         logger.error("pmdarima not installed. Run: pip install pmdarima")

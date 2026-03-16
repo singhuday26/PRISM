@@ -131,9 +131,9 @@ powershell -File kill_prism.ps1
 
 ## Troubleshooting
 
-| Problem                        | Fix                                                 |
-| ------------------------------ | --------------------------------------------------- |
+| Problem                          | Fix                                                   |
+| -------------------------------- | ----------------------------------------------------- |
 | `No module named 'backend'`    | Run commands from the project root `PRISM/`         |
-| `Could not connect to MongoDB` | Start `mongod` or check `MONGO_URI` in `.env`       |
+| `Could not connect to MongoDB` | Start `mongod` or check `MONGO_URI` in `.env`   |
 | `Port 8000 already in use`     | `uvicorn backend.app:app --port 8001 --reload`      |
-| Import errors                  | `pip install -r requirements.txt --force-reinstall` |
+| Import errors                    | `pip install -r requirements.txt --force-reinstall` |

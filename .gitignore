@@ -77,3 +77,4 @@ nul
 *.csv.bak
 backup/
 generated_reports/
+.aider*

@@ -1,10 +1,67 @@
-"""Start both API and Streamlit Dashboard for PRISM"""
+"""Start both API and Streamlit Dashboard for PRISM."""
+import os
+import signal
 import subprocess
 import sys
 import time
-import os
-import signal
 from pathlib import Path
+
+
+WINDOWS = os.name == "nt"
+CREATE_NEW_PROCESS_GROUP = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+shutdown_requested = False
+
+
+def _handle_shutdown_signal(signum, _frame):
+    """Request a graceful shutdown when Ctrl+C or termination signals arrive."""
+    global shutdown_requested
+    shutdown_requested = True
+    signal_name = signal.Signals(signum).name if signum else "UNKNOWN"
+    print(f"\n\n⏹️  Shutdown requested ({signal_name})...")
+
+
+def spawn_process(cmd, *, stdout=None, stderr=None, cwd=None):
+    """Spawn a child process in its own process group so it can be cleaned up reliably."""
+    kwargs = {
+        "stdout": stdout,
+        "stderr": stderr,
+        "cwd": cwd,
+    }
+    if WINDOWS:
+        kwargs["creationflags"] = CREATE_NEW_PROCESS_GROUP
+    else:
+        kwargs["start_new_session"] = True
+    return subprocess.Popen(cmd, **kwargs)
+
+
+def terminate_process_tree(process, label):
+    """Terminate a process and any children it may have spawned."""
+    if not process or process.poll() is not None:
+        return
+
+    print(f"⏹️  Shutting down {label}...")
+    try:
+        if WINDOWS:
+            subprocess.run(
+                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+            )
+        else:
+            os.killpg(process.pid, signal.SIGTERM)
+            process.wait(timeout=5)
+    except Exception:
+        try:
+            process.terminate()
+            process.wait(timeout=5)
+        except Exception:
+            try:
+                process.kill()
+            except Exception:
+                pass
+
+    print(f"✓ {label} stopped")
 
 def check_port_available(port):
     """Check if a port is available."""
@@ -15,6 +72,12 @@ def check_port_available(port):
     return result != 0
 
 def main():
+    global shutdown_requested
+
+    signal.signal(signal.SIGINT, _handle_shutdown_signal)
+    if hasattr(signal, "SIGTERM"):
+        signal.signal(signal.SIGTERM, _handle_shutdown_signal)
+
     print("=" * 80)
     print("🚀 PRISM - Starting Web Services")
     print("=" * 80)
@@ -59,7 +122,7 @@ def main():
         print(f"   Writing MongoDB logs to: {mongo_log_path}")
         mongo_log = open(mongo_log_path, "w")
         try:
-            mongo_process = subprocess.Popen(
+            mongo_process = spawn_process(
                 ["mongod", "--port", "27017"],
                 stdout=mongo_log,
                 stderr=subprocess.STDOUT,
@@ -114,7 +177,7 @@ def main():
     # Start API in background
     api_process = None
     try:
-        api_process = subprocess.Popen(
+        api_process = spawn_process(
             cmd,
             stdout=api_log,
             stderr=subprocess.STDOUT,
@@ -165,53 +228,41 @@ def main():
         print()
         
         # Start Streamlit (non-blocking so we can manage shutdown)
-        streamlit_process = subprocess.Popen([
+        streamlit_process = spawn_process([
             sys.executable, "-m", "streamlit", "run",
             "backend/dashboard/app.py",
             "--server.port=8501",
             "--server.address=localhost",
             "--server.headless=true"
         ])
-        
-        # Wait for Streamlit to exit (or be killed)
-        streamlit_process.wait()
+
+        while not shutdown_requested:
+            if streamlit_process.poll() is not None:
+                print("\nℹ️  Dashboard process exited.")
+                break
+            if api_process and api_process.poll() is not None:
+                print("\n⚠️  API process exited unexpectedly. Stopping remaining services...")
+                break
+            if mongo_process and mongo_process.poll() is not None:
+                print("\n⚠️  MongoDB process exited unexpectedly. Stopping remaining services...")
+                break
+            time.sleep(0.5)
     except KeyboardInterrupt:
+        shutdown_requested = True
         print("\n\n⏹️  Stopping PRISM (KeyboardInterrupt)...")
     except Exception as e:
+        shutdown_requested = True
         print(f"\n\n❌ Error occurred: {e}")
     finally:
-        # Terminate Streamlit if still running
-        if 'streamlit_process' in locals() and streamlit_process.poll() is None:
-            print("⏹️  Shutting down Dashboard...")
-            streamlit_process.terminate()
-            try:
-                streamlit_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                streamlit_process.kill()
-            print("✓ Dashboard stopped")
-        
-        if api_process and api_process.poll() is None:
-            print("⏹️  Shutting down API server...")
-            api_process.terminate()
-            try:
-                api_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                api_process.kill()
-            print("✓ API stopped")
-        
-        if mongo_process and mongo_process.poll() is None:
-            print("⏹️  Shutting down MongoDB...")
-            mongo_process.terminate()
-            try:
-                mongo_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                mongo_process.kill()
-            print("✓ MongoDB stopped")
+        terminate_process_tree(locals().get("streamlit_process"), "Dashboard")
+        terminate_process_tree(locals().get("api_process"), "API server")
+        terminate_process_tree(locals().get("mongo_process"), "MongoDB")
         
         if 'api_log' in locals() and not api_log.closed:
             api_log.close()
+        if 'mongo_log' in locals() and not mongo_log.closed:
+            mongo_log.close()
             
-        print("✓ Dashboard stopped")
         print("\nGoodbye! 👋")
 
 if __name__ == "__main__":

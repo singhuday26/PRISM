@@ -11,6 +11,7 @@ from pymongo.errors import PyMongoError
 
 from .config import get_settings
 from .db import ensure_indexes, get_client
+from .services.cache import ensure_cache_indexes
 from .logging_config import setup_logging
 from .routes.health import router as health_router
 from .routes.regions import router as regions_router
@@ -44,6 +45,7 @@ async def lifespan(app: FastAPI):
     
     try:
         ensure_indexes()
+        ensure_cache_indexes()
         logger.info("Application startup complete")
     except Exception as e:
         logger.error(f"Failed to initialize application: {e}")
