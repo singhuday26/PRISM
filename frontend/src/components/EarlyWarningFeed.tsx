@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchNews, type NewsArticle } from '../lib/api';
+import { buildApiPath, fetchNews, type NewsArticle } from '../lib/api';
 import { AlertCircle, ExternalLink, Newspaper, Zap } from 'lucide-react';
 
 interface EarlyWarningFeedProps {
@@ -117,7 +117,7 @@ const EarlyWarningFeed: React.FC<EarlyWarningFeedProps> = ({ disease }) => {
                     onClick={async () => {
                         // This is for demo purposes in the frontend
                         try {
-                            const res = await fetch('/api/news/ingest-simulated', { method: 'POST' });
+                            const res = await fetch(buildApiPath('/news/ingest-simulated'), { method: 'POST' });
                             if (res.ok) window.location.reload();
                         } catch (e) {
                             console.error(e);

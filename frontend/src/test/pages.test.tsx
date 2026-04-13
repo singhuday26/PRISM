@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { ToastProvider } from "../context/ToastContext";
 
 /*
  * Smoke-test each page component:
@@ -34,7 +35,11 @@ beforeEach(() => {
 
 // Helper to wrap with Router (required by Link / NavLink usage)
 function renderWithRouter(ui: React.ReactElement) {
-  return render(<MemoryRouter>{ui}</MemoryRouter>);
+  return render(
+    <ToastProvider>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </ToastProvider>,
+  );
 }
 
 // ---------- tests ----------

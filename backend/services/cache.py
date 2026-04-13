@@ -6,7 +6,7 @@ import json
 import logging
 import hashlib
 from datetime import datetime, timedelta
-from typing import Any, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
 from pydantic import BaseModel
 from backend.db import get_db

@@ -393,12 +393,18 @@ const VIZ_ALERTS = [
 ];
 
 function PRISMVisualization(): React.ReactNode {
-    const [time, setTime] = useState('');
+    const [time, setTime] = useState(() =>
+        new Date().toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+        }),
+    );
     const updateTime = useCallback(() => {
         setTime(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
     }, []);
     useEffect(() => {
-        updateTime();
         const t = setInterval(updateTime, 1000);
         return () => clearInterval(t);
     }, [updateTime]);

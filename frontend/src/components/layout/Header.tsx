@@ -75,7 +75,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           >
             <AlertTriangle className={`w-4 h-4 shrink-0 ${style.icon}`} />
             <span className={`text-xs sm:text-sm ${style.text} font-medium truncate`}>
-              {latestAlert.severity}:{" "}
+              {latestAlert.risk_level || latestAlert.severity || "MEDIUM"}:{" "}
               {latestAlert.reason ||
                 `Alert in ${latestAlert.region_id}`}
             </span>

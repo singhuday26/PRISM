@@ -2,8 +2,17 @@ import logging
 from typing import Iterable, Dict
 from pymongo.errors import PyMongoError
 from ..db import get_db
+from .cache import CacheService
 
 logger = logging.getLogger(__name__)
+
+
+def _invalidate_derived_caches() -> None:
+    """Invalidate caches that depend on ingested data."""
+    try:
+        CacheService.invalidate("risk_scores")
+    except Exception as e:
+        logger.warning(f"Failed to invalidate risk cache: {e}")
 
 
 def upsert_regions(regions: Iterable[Dict]) -> int:
@@ -11,6 +20,7 @@ def upsert_regions(regions: Iterable[Dict]) -> int:
     try:
         db = get_db()
         inserted = 0
+        changed = False
         for region in regions:
             # Build query filter including disease for proper isolation
             query_filter = {"region_id": region["region_id"]}
@@ -25,6 +35,12 @@ def upsert_regions(regions: Iterable[Dict]) -> int:
             )
             if res.upserted_id:
                 inserted += 1
+            if res.upserted_id or res.modified_count > 0:
+                changed = True
+
+        if changed:
+            _invalidate_derived_caches()
+
         logger.info(f"Upserted {inserted} new regions")
         return inserted
     except PyMongoError as e:
@@ -40,6 +56,7 @@ def upsert_cases(cases: Iterable[Dict]) -> int:
     try:
         db = get_db()
         inserted = 0
+        changed = False
         for case in cases:
             # Build query filter including disease for proper isolation
             query_filter = {
@@ -57,6 +74,11 @@ def upsert_cases(cases: Iterable[Dict]) -> int:
             )
             if res.upserted_id:
                 inserted += 1
+                changed = True
+
+        if changed:
+            _invalidate_derived_caches()
+
         logger.info(f"Upserted {inserted} new case records")
         return inserted
     except PyMongoError as e:

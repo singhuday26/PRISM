@@ -85,15 +85,32 @@ export function Dashboard() {
   }, [disease]);
 
   useEffect(() => {
-    loadMetrics();
-    fetchDiseases()
-      .then((d) => setDiseases(d.diseases))
-      .catch((e) => console.error("Failed to load diseases", e));
+    const timer = window.setTimeout(() => {
+      void loadMetrics();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadMetrics]);
+
+  useEffect(() => {
+    let active = true;
+    fetchDiseases()
+      .then((d) => {
+        if (active) {
+          setDiseases(d.diseases);
+        }
+      })
+      .catch((e) => console.error("Failed to load diseases", e));
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Auto-refresh every 60s
   useEffect(() => {
-    const interval = setInterval(loadMetrics, 60000);
+    const interval = window.setInterval(() => {
+      void loadMetrics();
+    }, 60000);
     return () => clearInterval(interval);
   }, [loadMetrics]);
 

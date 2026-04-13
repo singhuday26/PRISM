@@ -12,6 +12,7 @@ import {
   listReports,
   generateReport,
   fetchDiseases,
+  buildApiPath,
   type ReportItem,
   type DiseaseInfo,
 } from "../lib/api";
@@ -205,7 +206,7 @@ export function Reports() {
                 <div className="flex items-center gap-3">
                   {report.status === "ready" && (
                     <a
-                      href={`/api/reports/${report.report_id}/download`}
+                      href={buildApiPath(`/reports/${report.report_id}/download`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       download
