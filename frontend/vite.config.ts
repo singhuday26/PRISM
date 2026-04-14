@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/ui/",
+  base: "/",
   plugins: [react(), (tailwindcss as any)()],
   server: {
     proxy: {
@@ -23,3 +23,4 @@ export default defineConfig({
     css: false,
   },
 } as any);
+

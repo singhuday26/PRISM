@@ -73,12 +73,12 @@ export function LandingPage() {
                     <div className="flex items-center gap-6">
                         <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="hidden sm:inline text-sm font-medium text-slate-400 hover:text-white transition-colors">Features</a>
                         <a href="#how-it-works" onClick={(e) => smoothScroll(e, 'how-it-works')} className="hidden sm:inline text-sm font-medium text-slate-400 hover:text-white transition-colors">How It Works</a>
-                        <Link to="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
-                            Sign In
-                        </Link>
-                        <Link to="/login" className="group relative inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-full overflow-hidden transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-950">
+                        <a href="https://github.com/singhuday26/PRISM" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+                            GitHub
+                        </a>
+                        <Link to="/app" className="group relative inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-full overflow-hidden transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-950">
                             <span className="relative z-10 flex items-center gap-2">
-                                Launch Command <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                                Explore Demo <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                             </span>
                         </Link>
                     </div>
@@ -96,10 +96,10 @@ export function LandingPage() {
                     <div className="text-center max-w-4xl mx-auto">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700/50 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-8">
                             <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            System Operational
+                            Live Demo — Explore Freely
                         </div>
 
                         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-[1.1]">
@@ -114,8 +114,8 @@ export function LandingPage() {
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link to="/login" className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] flex items-center justify-center gap-2 group">
-                                Access Platform
+                            <Link to="/app" className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-semibold text-lg transition-all shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] flex items-center justify-center gap-2 group">
+                                Explore Live Demo
                                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                             </Link>
                             <a href="#features" onClick={(e) => smoothScroll(e, 'features')} className="w-full sm:w-auto px-8 py-4 bg-slate-800/50 hover:bg-slate-800 text-white rounded-full font-semibold text-lg border border-slate-700 transition-all flex items-center justify-center">
@@ -257,8 +257,8 @@ export function LandingPage() {
                     <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto">
                         Join the next generation of public health command centers. Start monitoring, forecasting, and responding today.
                     </p>
-                    <Link to="/login" className="inline-flex items-center gap-2 px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] group">
-                        Launch PRISM Command
+                    <Link to="/app" className="inline-flex items-center gap-2 px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-semibold text-lg transition-all shadow-[0_0_30px_rgba(99,102,241,0.3)] hover:shadow-[0_0_40px_rgba(99,102,241,0.5)] group">
+                        Explore PRISM Dashboard
                         <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                     </Link>
                 </div>

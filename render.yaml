@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: prism-api
+    runtime: python
+    repo: https://github.com/singhuday26/PRISM.git
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MONGO_URI
+        sync: false  # Set manually in Render dashboard
+      - key: DB_NAME
+        value: prism_db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ENABLE_CORS
+        value: "true"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    healthCheckPath: /health/ping

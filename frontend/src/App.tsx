@@ -14,7 +14,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isDemo } = useAuth();
 
   if (loading) {
     return (
@@ -22,6 +22,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
       </div>
     );
+  }
+
+  // Demo mode: allow access without login
+  if (isDemo && user) {
+    return <>{children}</>;
   }
 
   if (!user) {
@@ -35,7 +40,7 @@ function App() {
   return (
     <AuthProvider>
       <ToastProvider>
-        <BrowserRouter basename="/ui">
+        <BrowserRouter basename="/">
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />

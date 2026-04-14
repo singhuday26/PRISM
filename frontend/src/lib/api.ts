@@ -48,18 +48,21 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
   };
   const response = await fetch(url, { ...init, headers });
   if (response.status === 401) {
-    localStorage.removeItem("prism_token");
-    const loginPath = window.location.pathname.startsWith("/ui")
-      ? "/ui/login"
-      : "/login";
-    // Only redirect if not already on login/landing
-    if (
-      !window.location.pathname.includes("/login") &&
-      window.location.pathname !== "/"
-    ) {
-      window.location.href = loginPath;
+    const token = localStorage.getItem("prism_token");
+    // Only redirect if user had a real token (not demo mode)
+    if (token) {
+      localStorage.removeItem("prism_token");
+      const loginPath = window.location.pathname.startsWith("/ui")
+        ? "/ui/login"
+        : "/login";
+      if (
+        !window.location.pathname.includes("/login") &&
+        window.location.pathname !== "/"
+      ) {
+        window.location.href = loginPath;
+      }
     }
-    throw new Error("Session expired. Please log in again.");
+    throw new Error("Authentication required for this action in demo mode.");
   }
   return response;
 }
