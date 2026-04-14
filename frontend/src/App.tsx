@@ -7,6 +7,7 @@ import { Reports } from "./pages/Reports";
 import { Settings } from "./pages/Settings";
 import { AdminProfile } from "./pages/AdminProfile";
 import { LoginPage } from "./pages/LoginPage";
+import { SignupPage } from "./pages/SignupPage";
 import { LandingPage } from "./pages/LandingPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -38,6 +39,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
             <Route
               path="/app"
               element={

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { login } from '../lib/api';
 import { Lock, User, AlertCircle, Shield } from 'lucide-react';
@@ -111,13 +111,14 @@ export function LoginPage() {
                 </div>
 
                 <p className="mt-8 text-center text-slate-500 text-sm">
-                    <a href="/" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+                    Don't have an account?{' '}
+                    <Link to="/signup" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
+                        Sign Up
+                    </Link>
+                    <br />
+                    <a href="/" className="mt-2 inline-block text-slate-500 hover:text-slate-400 transition-colors">
                         ← Back to Home
                     </a>
-                    <br />
-                    <span className="mt-2 inline-block">Protected by PRISM Security Layer.</span>
-                    <br />
-                    Contact administrator for access.
                 </p>
             </div>
         </div>

@@ -45,7 +45,7 @@ cp .env.example .env
 **Option A - One Command (Recommended)**:
 
 ```bash
-python start_prism.py
+python scripts/start_prism.py
 ```
 
 This starts both the API and Dashboard automatically!
@@ -61,7 +61,7 @@ python -m uvicorn backend.app:app --reload
 **Terminal 2 - Dashboard**:
 
 ```bash
-python run_dashboard.py
+streamlit run backend/dashboard/app.py
 ```
 
 ### 4. Access Web Interfaces
@@ -105,9 +105,9 @@ The production build is served at `/ui/` by the FastAPI backend.
 
 - **[Web Interface Guide](docs/WEB_INTERFACE_GUIDE.md)** - Dashboard and API access
 - **[Multi-Disease Guide](docs/MULTI_DISEASE_GUIDE.md)** - Multi-disease support and management
-- **[Security Best Practices](SECURITY.md)** - Security guidelines and configuration
-- **[Development Guide](DEVELOPMENT.md)** - Setup, testing, and development workflow
-- **[Quick Start](QUICKSTART.md)** - Fast track to get PRISM running
+- **[Security Best Practices](docs/SECURITY.md)** - Security guidelines and configuration
+- **[Development Guide](docs/DEVELOPMENT.md)** - Setup, testing, and development workflow
+- **[Quick Start](docs/QUICKSTART.md)** - Fast track to get PRISM running
 
 ## API Endpoints
 
@@ -242,7 +242,7 @@ Automatically created on startup for optimal performance:
 - CORS configuration for cross-origin requests
 - MongoDB connection pooling and timeouts
 - No sensitive data in logs
-- See [SECURITY.md](SECURITY.md) for details
+- See [SECURITY.md](docs/SECURITY.md) for details
 
 ## Contributing
 
