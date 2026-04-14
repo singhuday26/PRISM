@@ -1,29 +1,31 @@
 # PRISM (Predictive Risk Intelligence & Surveillance Model)
 
-Early outbreak warning and hotspot forecasting prototype using Python + MongoDB + FastAPI + React + Streamlit.
+**Early outbreak warning and hotspot forecasting prototype for public health intelligence.**
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-green.svg)](https://fastapi.tiangolo.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-green.svg)](https://www.mongodb.com/)
 [![React 19](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
-[![Vite 7](https://img.shields.io/badge/Vite-7-646cff.svg)](https://vite.dev/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-green.svg)](https://www.mongodb.com/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Features
+---
 
-✅ **Real-time Risk Assessment** — Compute risk scores based on case data  
-✅ **Automated Alerts** — Generate alerts for high-risk regions  
-✅ **Hotspot Detection** — Identify regions with highest case counts  
-✅ **ARIMA Forecasting** — Predict future trends with configurable horizon  
-✅ **Multi-Disease Support** — Isolate and manage DENGUE, COVID, and more  
-✅ **RESTful API** — 20+ endpoints with automatic Swagger documentation  
-✅ **React Frontend** — Interactive map (Leaflet), charts (Recharts), resource planning  
-✅ **Streamlit Dashboard** — Pipeline runner, hotspot viewer, CSV export  
-✅ **Resource Prediction** — Bed, ICU, nurse, and oxygen demand estimation  
-✅ **PDF Reporting** — Automated weekly/monthly report generation  
-✅ **Notification System** — Email + SMS (stub) alert dispatching  
-✅ **Climate-Aware Risk** — Weather boost factors for seasonal diseases  
-✅ **Comprehensive Logging** — Rotating logs with separate error file  
-✅ **Health Monitoring** — Database connectivity and collection count checks
+## 🌟 Overview
+
+PRISM is an end-to-end surveillance system designed to assist public health officials in monitoring, predicting, and responding to infectious disease outbreaks. By combining real-time case data with ARIMA-based forecasting and climate-aware risk modeling, PRISM provides actionable intelligence for resource allocation and early intervention.
+
+**[🎥 View Demo Video](https://your-linkedin-video-link) | [🚀 Access Live Platform](https://your-deployed-url.com)**
+
+---
+
+## 🚀 Key Features
+
+*   🌍 **Interactive Heatmaps** — Visualizing disease spread using Leaflet and GeoJSON.
+*   📈 **ARIMA Forecasting** — 7-to-30 day predictive modeling for case trends.
+*   🌡️ **Climate-Aware Risk** — Dynamic risk scores adjusted by seasonal weather factors.
+*   🏥 **Resource Intelligence** — Automated prediction of Bed, ICU, and Nurse demand.
+*   📑 **Automated Reporting** — PDF generation for weekly and monthly health bulletins.
+*   📱 **Multi-Channel Alerts** — Alerting system via Email/SMS placeholders.
 
 ## Quick Start
 

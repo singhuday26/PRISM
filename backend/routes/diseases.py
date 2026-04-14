@@ -7,7 +7,7 @@ from backend.db import get_db
 router = APIRouter()
 
 
-@router.get("/diseases")
+@router.get("/")
 async def list_diseases(
     transmission_mode: Optional[str] = Query(None, description="Filter by transmission mode"),
     severity: Optional[str] = Query(None, description="Filter by severity"),
@@ -37,7 +37,7 @@ async def list_diseases(
     }
 
 
-@router.get("/diseases/{disease_id}")
+@router.get("/{disease_id}")
 async def get_disease_profile(disease_id: str):
     """
     Get detailed profile for a specific disease.
@@ -51,7 +51,7 @@ async def get_disease_profile(disease_id: str):
     return profile.model_dump()
 
 
-@router.get("/diseases/{disease_id}/stats")
+@router.get("/{disease_id}/stats")
 async def get_disease_stats(disease_id: str):
     """
     Get database statistics for a specific disease.
@@ -128,7 +128,7 @@ async def get_disease_stats(disease_id: str):
     }
 
 
-@router.get("/diseases/compare/multiple")
+@router.get("/compare/multiple")
 async def compare_diseases(
     disease_ids: str = Query(..., description="Comma-separated disease IDs to compare")
 ):
@@ -199,7 +199,7 @@ async def compare_diseases(
     }
 
 
-@router.get("/diseases/transmission/{mode}")
+@router.get("/transmission/{mode}")
 async def list_diseases_by_transmission(mode: str):
     """
     List all diseases by transmission mode.
