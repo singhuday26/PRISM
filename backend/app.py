@@ -30,6 +30,7 @@ from .routes.auth import router as auth_router
 from .routes.news import router as news_router
 from .routes.ecosystem import router as ecosystem_router
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,6 +121,7 @@ def create_app() -> FastAPI:
         )
     
     # Include routers
+    app.include_router(news_router, prefix="/intelligence", tags=["news"])
     app.include_router(health_router, prefix="/health", tags=["health"])
     app.include_router(regions_router, prefix="/regions", tags=["regions"])
     app.include_router(hotspots_router, prefix="/hotspots", tags=["hotspots"])
@@ -133,8 +135,7 @@ def create_app() -> FastAPI:
     app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
     app.include_router(reports_router, prefix="/reports", tags=["reports"])
     app.include_router(resources_router, prefix="/resources", tags=["resources"])
-    app.include_router(auth_router)
-    app.include_router(news_router, prefix="/news", tags=["news"])
+    app.include_router(auth_router, prefix="/auth", tags=["auth"])
     app.include_router(ecosystem_router, prefix="/ecosystem", tags=["ecosystem"])
 
     # Serve frontend static files
@@ -160,4 +161,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

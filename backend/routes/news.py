@@ -3,7 +3,7 @@ from typing import List, Optional
 from ..services import news as news_service
 from ..schemas.responses import NewsResponse
 
-router = APIRouter(prefix="/news", tags=["news"])
+router = APIRouter()
 
 @router.get("/", response_model=NewsResponse)
 async def get_news(

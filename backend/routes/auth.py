@@ -18,7 +18,7 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 settings = get_settings()
-router = APIRouter(prefix="/auth", tags=["authentication"])
+router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 

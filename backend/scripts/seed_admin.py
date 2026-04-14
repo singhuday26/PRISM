@@ -20,9 +20,6 @@ def seed_admin():
     
     # Check if admin already exists
     existing = db["users"].find_one({"username": "admin"})
-    if existing:
-        print("✅ Admin user already exists. Skipping.")
-        return
     
     admin_user = {
         "username": "admin",
@@ -31,8 +28,12 @@ def seed_admin():
         "hashed_password": get_password_hash("admin123"),
     }
     
-    db["users"].insert_one(admin_user)
-    print("✅ Admin user created successfully!")
+    if existing:
+        db["users"].update_one({"username": "admin"}, {"$set": admin_user})
+        print("✅ Admin user already exists. Password updated.")
+    else:
+        db["users"].insert_one(admin_user)
+        print("✅ Admin user created successfully!")
     print("   Username: admin")
     print("   Password: admin123")
     print("   Role:     admin")

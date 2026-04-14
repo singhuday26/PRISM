@@ -594,7 +594,7 @@ export async function fetchNews(
   if (disease) params.append("disease", disease);
   params.append("limit", limit.toString());
 
-  const response = await fetch(`${API_BASE}/news/?${params}`);
+  const response = await fetch(`${API_BASE}/intelligence/?${params}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch news: ${response.statusText}`);
   }
