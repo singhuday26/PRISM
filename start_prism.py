@@ -71,6 +71,14 @@ def check_port_available(port):
     sock.close()
     return result != 0
 
+
+def get_runtime_python() -> Path:
+    """Prefer the project-local interpreter for child services when available."""
+    project_python = Path(__file__).parent / ".conda" / "python.exe"
+    if project_python.exists():
+        return project_python
+    return Path(sys.executable)
+
 def main():
     global shutdown_requested
 
@@ -109,6 +117,12 @@ def main():
     # Create logs directory
     logs_dir = Path(__file__).parent / "logs"
     logs_dir.mkdir(exist_ok=True)
+
+    runtime_python = get_runtime_python()
+    if str(runtime_python) != sys.executable:
+        print(f"\n🐍 Using project Python for services: {runtime_python}")
+    else:
+        print(f"\n🐍 Using current Python for services: {runtime_python}")
 
     # ------------------------------------------------------------------ #
     # Step 1: Start MongoDB
@@ -171,7 +185,7 @@ def main():
     print(f"   Writing API logs to: {api_log_path}")
     api_log = open(api_log_path, "w")
     
-    cmd = [sys.executable, "-m", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    cmd = [str(runtime_python), "-m", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
     print(f"   Command: {' '.join(cmd)}")
     
     # Start API in background
@@ -229,7 +243,7 @@ def main():
         
         # Start Streamlit (non-blocking so we can manage shutdown)
         streamlit_process = spawn_process([
-            sys.executable, "-m", "streamlit", "run",
+            str(runtime_python), "-m", "streamlit", "run",
             "backend/dashboard/app.py",
             "--server.port=8501",
             "--server.address=localhost",

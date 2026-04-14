@@ -128,13 +128,13 @@ def create_app() -> FastAPI:
     app.include_router(forecasts_router, prefix="/forecasts", tags=["forecasts"])
     app.include_router(pipeline_router, prefix="/pipeline", tags=["pipeline"])
     app.include_router(evaluation_router, prefix="/evaluation", tags=["evaluation"])
-    app.include_router(diseases_router, tags=["diseases"])
+    app.include_router(diseases_router, prefix="/diseases", tags=["diseases"])
     app.include_router(geojson_router, prefix="/risk", tags=["geojson"])
     app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
     app.include_router(reports_router, prefix="/reports", tags=["reports"])
     app.include_router(resources_router, prefix="/resources", tags=["resources"])
     app.include_router(auth_router)
-    app.include_router(news_router)
+    app.include_router(news_router, prefix="/news", tags=["news"])
     app.include_router(ecosystem_router, prefix="/ecosystem", tags=["ecosystem"])
 
     # Serve frontend static files
@@ -146,6 +146,11 @@ def create_app() -> FastAPI:
             name="frontend",
         )
         logger.info(f"Serving frontend from {frontend_dist}")
+
+        # Catch-all route to serve index.html for SPA routing under /ui
+        @app.get("/ui/{full_path:path}", include_in_schema=False)
+        def _serve_spa(full_path: str):
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Not Found"}) if "." in full_path else RedirectResponse(url="/ui/")
 
     @app.get("/", include_in_schema=False)
     def _root_redirect():
