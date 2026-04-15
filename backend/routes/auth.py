@@ -20,15 +20,24 @@ class ChangePasswordRequest(BaseModel):
 settings = get_settings()
 router = APIRouter()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+import os
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
+
+async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)):
     """Dependency to get the current authenticated user from a JWT token."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    
+    if not token:
+        if os.getenv("DEMO_MODE", "True").lower() == "true":
+            return {"username": "Demo Viewer", "role": "viewer"}
+        else:
+            raise credentials_exception
+
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
         username: str = payload.get("sub")
