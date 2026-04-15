@@ -32,12 +32,13 @@ class Settings(BaseSettings):
     smtp_password: str = Field("", env="SMTP_PASSWORD")
     smtp_from: str = Field("noreply@localhost", env="SMTP_FROM")
     smtp_from_name: str = Field("PRISM Alerts", env="SMTP_FROM_NAME")
-    api_url: str = Field("http://localhost:8000", env="API_URL")
+    api_url: str = Field("https://prism-6gtg.onrender.com", env="API_URL")
 
     # JWT Authentication Settings
     secret_key: str = Field("prism_super_secret_key_change_in_production", env="SECRET_KEY")
     jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
-    access_token_expire_minutes: int = Field(60, env="ACCESS_TOKEN_EXPIRE_MINUTES")
+    access_token_expire_minutes: int = Field(120, env="ACCESS_TOKEN_EXPIRE_MINUTES")
+    demo_mode: bool = Field(True, env="DEMO_MODE", description="Enable auth bypass for demo users")
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
