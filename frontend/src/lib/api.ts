@@ -7,6 +7,8 @@ function resolveApiBase(): string {
   const configured = import.meta.env.VITE_API_BASE as string | undefined;
   if (configured && configured.trim().length > 0) {
     const base = configured.trim();
+    // If it's an absolute URL, don't prepend a slash
+    if (base.startsWith("http")) return base;
     return base.startsWith("/") ? base : `/${base}`;
   }
 
