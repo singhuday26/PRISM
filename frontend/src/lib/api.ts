@@ -12,7 +12,7 @@ function resolveApiBase(): string {
   }
 
   // If VITE_API_BASE is not set, we are running locally (or deployed but unconfigured).
-  // Because the FastAPI backend now correctly mounts all API routes under /api, 
+  // Because the FastAPI backend now correctly mounts all API routes under /api,
   // we can safely use /api for both vite dev proxy and local python deployments!
   return "/api";
 }
@@ -357,7 +357,7 @@ export interface LoginError {
  * Fetch all regions
  */
 export async function fetchRegions(): Promise<RegionsResponse> {
-  const response = await fetch(`${API_BASE}/regions`);
+  const response = await fetch(`${API_BASE}/regions/`);
   if (!response.ok) {
     throw new Error(`Failed to fetch regions: ${response.statusText}`);
   }

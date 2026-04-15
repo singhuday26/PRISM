@@ -21,7 +21,7 @@ describe("api.ts URL construction", () => {
     const { fetchRegions } = await import("../lib/api");
     await fetchRegions();
 
-    expect(mockFetch).toHaveBeenCalledWith("/api/regions");
+    expect(mockFetch).toHaveBeenCalledWith("/api/regions/");
   });
 
   it("fetchDiseases calls /api/diseases/", async () => {

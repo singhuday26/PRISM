@@ -41,12 +41,12 @@ function MetricCard({ icon, label, value, subtext, color }: MetricCardProps) {
   return (
     <div className="glass-card p-5 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
       <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 rounded-lg ${color}`}>
-          {icon}
-        </div>
+        <div className={`p-2.5 rounded-lg ${color}`}>{icon}</div>
       </div>
       <div className="text-2xl font-bold text-white mb-1">{value}</div>
-      <div className="text-xs text-gray-400 uppercase tracking-wider font-medium">{label}</div>
+      <div className="text-xs text-gray-400 uppercase tracking-wider font-medium">
+        {label}
+      </div>
       {subtext && <div className="text-xs text-gray-500 mt-1">{subtext}</div>}
     </div>
   );
@@ -56,6 +56,7 @@ export function Dashboard() {
   const [regionId, setRegionId] = useState("IN-MH");
   const [disease, setDisease] = useState("DENGUE");
   const [regions, setRegions] = useState<Region[]>([]);
+  const [regionError, setRegionError] = useState<string | null>(null);
   const [diseases, setDiseases] = useState<DiseaseInfo[]>([]);
 
   // Metrics state
@@ -71,12 +72,23 @@ export function Dashboard() {
         fetchEvaluationSummary(disease),
       ]);
 
-      if (alertsData.status === "fulfilled") setAlertCount(alertsData.value.count);
+      if (alertsData.status === "fulfilled")
+        setAlertCount(alertsData.value.count);
       if (regionsData.status === "fulfilled") {
         setRegionsCount(regionsData.value.count);
         setRegions(regionsData.value.regions);
+        setRegionError(null);
+      } else {
+        const reason = regionsData.reason;
+        const message =
+          reason instanceof Error ? reason.message : String(reason);
+        setRegionError(`Failed to load the regions list: ${message}`);
+        console.error("Failed to load the regions list", reason);
       }
-      if (evalData.status === "fulfilled" && evalData.value.aggregate_mape != null) {
+      if (
+        evalData.status === "fulfilled" &&
+        evalData.value.aggregate_mape != null
+      ) {
         setAvgMape(evalData.value.aggregate_mape);
       }
     } catch (e) {
@@ -114,8 +126,6 @@ export function Dashboard() {
     return () => clearInterval(interval);
   }, [loadMetrics]);
 
-
-
   return (
     <div className="space-y-8">
       {/* Page Title + Selectors + Pipeline */}
@@ -132,38 +142,62 @@ export function Dashboard() {
           <select
             value={regionId}
             onChange={(e) => setRegionId(e.target.value)}
+            aria-label="Select region"
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
           >
             {regions.map((r) => (
-              <option key={r.region_id} value={r.region_id} className="bg-gray-900">
+              <option
+                key={r.region_id}
+                value={r.region_id}
+                className="bg-gray-900"
+              >
                 {r.region_name}
               </option>
             ))}
             {regions.length === 0 && (
-              <option value="IN-MH" className="bg-gray-900">Maharashtra</option>
+              <option value="IN-MH" className="bg-gray-900">
+                Maharashtra
+              </option>
             )}
           </select>
           <select
             value={disease}
             onChange={(e) => setDisease(e.target.value)}
+            aria-label="Select disease"
             className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
           >
             {diseases.map((d) => (
-              <option key={d.disease_id} value={d.disease_id} className="bg-gray-900">
+              <option
+                key={d.disease_id}
+                value={d.disease_id}
+                className="bg-gray-900"
+              >
                 {d.name}
               </option>
             ))}
             {diseases.length === 0 && (
-              <option value="DENGUE" className="bg-gray-900">Dengue Fever</option>
+              <option value="DENGUE" className="bg-gray-900">
+                Dengue Fever
+              </option>
             )}
           </select>
         </div>
       </div>
 
+      {regionError && (
+        <div
+          role="alert"
+          className="glass-card p-4 border border-red-500/30 rounded-xl bg-red-500/10 text-red-200"
+        >
+          <p className="text-sm font-medium">{regionError}</p>
+          <p className="text-xs text-red-200/80 mt-1">
+            Check backend route availability and DB connectivity for regions.
+          </p>
+        </div>
+      )}
+
       {/* Pipeline Execution Panel */}
       <PipelineExecutionPanel disease={disease} onComplete={loadMetrics} />
-
-
 
       {/* Summary Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -8,8 +8,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/")
-def list_regions(disease: Optional[str] = Query(None, description="Filter by disease")):
+def _list_regions_impl(disease: Optional[str] = Query(None, description="Filter by disease")):
     """List all regions, optionally filtered by disease."""
     try:
         db = get_db()
@@ -35,6 +34,18 @@ def list_regions(disease: Optional[str] = Query(None, description="Filter by dis
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred",
         )
+
+
+@router.get("")
+def list_regions_no_slash(disease: Optional[str] = Query(None, description="Filter by disease")):
+    """List all regions without requiring a trailing slash in URL."""
+    return _list_regions_impl(disease)
+
+
+@router.get("/")
+def list_regions(disease: Optional[str] = Query(None, description="Filter by disease")):
+    """List all regions, optionally filtered by disease."""
+    return _list_regions_impl(disease)
 
 
 @router.get("/diseases")
