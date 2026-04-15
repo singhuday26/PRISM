@@ -190,6 +190,13 @@ def get_risk_geojson(
     try:
         db = get_db()
         risk_col = db["risk_scores"]
+        regions_col = db["regions"]
+        
+        # Fetch all regions to get their coordinates
+        regions_map = {
+            r["region_id"]: {"lat": r.get("lat"), "lon": r.get("lon"), "name": r.get("region_name")}
+            for r in regions_col.find({}, {"region_id": 1, "lat": 1, "lon": 1, "region_name": 1})
+        }
         
         # Build filter
         query: Dict[str, Any] = {}
@@ -211,7 +218,24 @@ def get_risk_geojson(
         # Convert to GeoJSON features
         features = []
         for risk in risk_scores:
-            feature = risk_to_geojson_feature(risk)
+            region_id = risk.get("region_id")
+            region_info = regions_map.get(region_id, {})
+            
+            # Create a dynamic geometry data if we have lat/lon in DB
+            geometry_data = None
+            if region_info.get("lat") is not None and region_info.get("lon") is not None:
+                # Leaflet expects [lon, lat] for GeoJSON
+                geometry_data = {
+                    "type": "Point",
+                    "coordinates": [region_info["lon"], region_info["lat"]]
+                }
+            
+            feature = risk_to_geojson_feature(risk, geometry_data=geometry_data)
+            
+            # Ensure name is correct from DB if missing in hardcoded dict
+            if region_info.get("name"):
+                feature["properties"]["region_name"] = region_info["name"]
+                
             features.append(feature)
         
         return {

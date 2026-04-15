@@ -30,7 +30,7 @@ except ImportError:
     CUSTOM_COMPONENTS = False
     PRISM_THEME_CSS = ""
 
-API_URL = os.getenv("API_BASE_URL") or os.getenv("API_URL") or "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://localhost:8000/api")
 PUBLIC_API_URL = os.getenv("PUBLIC_API_URL") or "http://localhost:8000"
 import logging
 logger = logging.getLogger(__name__)

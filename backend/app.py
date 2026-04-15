@@ -2,7 +2,7 @@ from pathlib import Path
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, APIRouter
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -120,23 +120,29 @@ def create_app() -> FastAPI:
             },
         )
     
-    # Include routers
-    app.include_router(news_router, prefix="/intelligence", tags=["news"])
-    app.include_router(health_router, prefix="/health", tags=["health"])
-    app.include_router(regions_router, prefix="/regions", tags=["regions"])
-    app.include_router(hotspots_router, prefix="/hotspots", tags=["hotspots"])
-    app.include_router(risk_router, prefix="/risk", tags=["risk"])
-    app.include_router(alerts_router, prefix="/alerts", tags=["alerts"])
-    app.include_router(forecasts_router, prefix="/forecasts", tags=["forecasts"])
-    app.include_router(pipeline_router, prefix="/pipeline", tags=["pipeline"])
-    app.include_router(evaluation_router, prefix="/evaluation", tags=["evaluation"])
-    app.include_router(diseases_router, prefix="/diseases", tags=["diseases"])
-    app.include_router(geojson_router, prefix="/risk", tags=["geojson"])
-    app.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
-    app.include_router(reports_router, prefix="/reports", tags=["reports"])
-    app.include_router(resources_router, prefix="/resources", tags=["resources"])
-    app.include_router(auth_router, prefix="/auth", tags=["auth"])
-    app.include_router(ecosystem_router, prefix="/ecosystem", tags=["ecosystem"])
+    # Create an API router to group all endpoints
+    api_router = APIRouter(prefix="/api")
+    
+    # Include routers into the API router
+    api_router.include_router(news_router, prefix="/intelligence", tags=["news"])
+    api_router.include_router(health_router, prefix="/health", tags=["health"])
+    api_router.include_router(regions_router, prefix="/regions", tags=["regions"])
+    api_router.include_router(hotspots_router, prefix="/hotspots", tags=["hotspots"])
+    api_router.include_router(risk_router, prefix="/risk", tags=["risk"])
+    api_router.include_router(alerts_router, prefix="/alerts", tags=["alerts"])
+    api_router.include_router(forecasts_router, prefix="/forecasts", tags=["forecasts"])
+    api_router.include_router(pipeline_router, prefix="/pipeline", tags=["pipeline"])
+    api_router.include_router(evaluation_router, prefix="/evaluation", tags=["evaluation"])
+    api_router.include_router(diseases_router, prefix="/diseases", tags=["diseases"])
+    api_router.include_router(geojson_router, prefix="/risk", tags=["geojson"])
+    api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
+    api_router.include_router(reports_router, prefix="/reports", tags=["reports"])
+    api_router.include_router(resources_router, prefix="/resources", tags=["resources"])
+    api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+    api_router.include_router(ecosystem_router, prefix="/ecosystem", tags=["ecosystem"])
+    
+    # Mount the API router to the app
+    app.include_router(api_router)
 
     # Serve frontend static files
     frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"

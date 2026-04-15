@@ -84,10 +84,10 @@ export function Resources() {
   }, [disease, showAllAlerts]);
 
   // Build display list: if a region is selected, ONLY show that region.
-  // Otherwise, if showAllAlerts is true, show all critical alerts.
+  // Otherwise, if showAllAlerts is true, show up to 4 critical alerts.
   const displayRegions = selectedRegion 
     ? [selectedRegion.toUpperCase()] 
-    : (showAllAlerts ? criticalRegions.map(r => r.toUpperCase()) : []);
+    : (showAllAlerts ? criticalRegions.slice(0, 4).map(r => r.toUpperCase()) : []);
 
 
   return (
@@ -176,7 +176,9 @@ export function Resources() {
       <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-lg font-semibold text-white">Critical Shortage Predictions</h2>
+          <h2 className="text-lg font-semibold text-white">
+            {selectedRegion ? "Resource Demands" : "Top Critical Shortage Predictions"}
+          </h2>
         </div>
 
         {alertsLoading ? (

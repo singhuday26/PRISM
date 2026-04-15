@@ -7,22 +7,13 @@ function resolveApiBase(): string {
   const configured = import.meta.env.VITE_API_BASE as string | undefined;
   if (configured && configured.trim().length > 0) {
     const base = configured.trim();
-    // If it's an absolute URL, don't prepend a slash
     if (base.startsWith("http")) return base;
     return base.startsWith("/") ? base : `/${base}`;
   }
 
-  if (import.meta.env.DEV) {
-    return "/api";
-  }
-
-  if (
-    typeof window !== "undefined" &&
-    window.location.pathname.startsWith("/ui")
-  ) {
-    return "";
-  }
-
+  // If VITE_API_BASE is not set, we are running locally (or deployed but unconfigured).
+  // Because the FastAPI backend now correctly mounts all API routes under /api, 
+  // we can safely use /api for both vite dev proxy and local python deployments!
   return "/api";
 }
 
