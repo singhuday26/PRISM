@@ -141,21 +141,33 @@ def create_app() -> FastAPI:
     # Serve frontend static files
     frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
     if frontend_dist.exists():
-        app.mount(
-            "/ui",
-            StaticFiles(directory=frontend_dist, html=True),
-            name="frontend",
-        )
-        logger.info(f"Serving frontend from {frontend_dist}")
+        # First, ensure API and Docs take priority (already included above)
+        
+        # SPA Catch-all and Static Serving
+        @app.get("/{full_path:path}", include_in_schema=False)
+        async def _serve_frontend(full_path: str):
+            # Prioritize API routes - they are already handled by routers above, 
+            # so if we are here, it's either a static file or an SPA route.
+            
+            # Check if it looks like a file (assets, favicon, etc.)
+            if "." in full_path:
+                file_path = frontend_dist / full_path
+                if file_path.exists():
+                    from fastapi.responses import FileResponse
+                    return FileResponse(file_path)
+            
+            # Otherwise, serve index.html for SPA routing (like /app)
+            index_file = frontend_dist / "index.html"
+            if index_file.exists():
+                from fastapi.responses import FileResponse
+                return FileResponse(index_file)
+            
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                content={"detail": "Frontend assets not found"}
+            )
 
-        # Catch-all route to serve index.html for SPA routing under /ui
-        @app.get("/ui/{full_path:path}", include_in_schema=False)
-        def _serve_spa(full_path: str):
-            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"detail": "Not Found"}) if "." in full_path else RedirectResponse(url="/ui/")
-
-    @app.get("/", include_in_schema=False)
-    def _root_redirect():
-        return RedirectResponse(url="/ui/")
+        logger.info(f"Serving frontend from {frontend_dist} at root")
 
     return app
 

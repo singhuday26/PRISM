@@ -8,15 +8,15 @@ import {
   type DiseaseInfo,
   type Region,
 } from "../lib/api";
-import { AlertTriangle, Plus, Activity, ChevronDown } from "lucide-react";
+import { AlertTriangle, Activity, ChevronDown } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { Skeleton } from "../components/ui/Skeleton";
 
 export function Resources() {
   const [criticalRegions, setCriticalRegions] = useState<string[]>([]);
-  const [customRegionsList, setCustomRegionsList] = useState<string[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
   const [selectedRegion, setSelectedRegion] = useState("");
+  const [showAllAlerts, setShowAllAlerts] = useState(true);
   const [disease, setDisease] = useState("DENGUE");
   const [diseases, setDiseases] = useState<DiseaseInfo[]>([]);
   const [allRegions, setAllRegions] = useState<Region[]>([]);
@@ -81,31 +81,14 @@ export function Resources() {
     loadCriticalRegions();
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disease]);
+  }, [disease, showAllAlerts]);
 
-  const addRegion = () => {
-    if (selectedRegion) {
-      const regionId = selectedRegion.toUpperCase();
-      if (!criticalRegions.includes(regionId) && !customRegionsList.includes(regionId)) {
-        setCustomRegionsList([...customRegionsList, regionId]);
-      }
-      setSelectedRegion("");
-    }
-  };
+  // Build display list: if a region is selected, ONLY show that region.
+  // Otherwise, if showAllAlerts is true, show all critical alerts.
+  const displayRegions = selectedRegion 
+    ? [selectedRegion.toUpperCase()] 
+    : (showAllAlerts ? criticalRegions.map(r => r.toUpperCase()) : []);
 
-  const removeCustomRegion = (regionId: string) => {
-    setCustomRegionsList(customRegionsList.filter((r) => r !== regionId));
-  };
-
-  const displayRegions = Array.from(new Set([...criticalRegions, ...customRegionsList]));
-
-  // Build set of already-monitored region IDs
-  const monitoredSet = new Set(displayRegions.map((r) => r.toUpperCase()));
-
-  // Regions available in dropdown = all regions not already monitored
-  const availableRegions = allRegions.filter(
-    (r) => !monitoredSet.has(r.region_id.toUpperCase()),
-  );
 
   return (
     <div className="space-y-8">
@@ -119,6 +102,25 @@ export function Resources() {
           </p>
         </div>
         <div className="flex gap-4 items-center">
+          {/* System Alerts Toggle */}
+          {!selectedRegion && (
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={showAllAlerts}
+                  onChange={(e) => setShowAllAlerts(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-blue-600/50 transition-colors" />
+                <div className="absolute left-1 top-1 w-3 h-3 bg-gray-400 peer-checked:bg-white peer-checked:translate-x-5 rounded-full transition-all" />
+              </div>
+              <span className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                Show System Alerts
+              </span>
+            </label>
+          )}
+
           {/* Disease Selector */}
           <div className="relative">
             <select
@@ -140,7 +142,7 @@ export function Resources() {
         </div>
       </div>
 
-      {/* Add Custom Region — Dropdown */}
+      {/* Region Selector — Direct Filter */}
       <div className="glass-card p-4 border border-white/5 rounded-xl flex flex-col sm:flex-row gap-3 items-stretch sm:items-center focus-within:border-blue-500/50 transition-colors">
         <div className="flex-1 relative">
           <select
@@ -150,29 +152,24 @@ export function Resources() {
             className="w-full appearance-none bg-white/5 border border-white/10 rounded-lg pl-4 pr-10 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="" className="bg-gray-900 text-gray-400">
-              {regionsLoading ? "Loading regions…" : "Select a region to monitor…"}
+              {regionsLoading ? "Loading regions…" : "Select a region to focus on…"}
             </option>
-            {availableRegions.map((r) => (
+            {allRegions.map((r) => (
               <option key={r.region_id} value={r.region_id} className="bg-gray-900">
                 {r.region_name} ({r.region_id})
               </option>
             ))}
-            {!regionsLoading && availableRegions.length === 0 && allRegions.length > 0 && (
-              <option disabled className="bg-gray-900 text-gray-500">
-                All regions are already being monitored
-              </option>
-            )}
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         </div>
-        <button
-          onClick={addRegion}
-          disabled={!selectedRegion}
-          className="flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Region</span>
-        </button>
+        {selectedRegion && (
+          <button
+            onClick={() => setSelectedRegion("")}
+            className="px-4 py-2 text-xs text-gray-400 hover:text-white transition-colors border border-white/10 rounded-lg hover:bg-white/5"
+          >
+            Clear Selection
+          </button>
+        )}
       </div>
 
       {/* Grid of Resource Widgets */}
@@ -193,18 +190,9 @@ export function Resources() {
               const regionInfo = allRegions.find(
                 (r) => r.region_id.toUpperCase() === regionId.toUpperCase(),
               );
-              const isCustom = customRegionsList.includes(regionId);
               return (
                 <div key={regionId} className="relative group">
                   <div className="absolute -left-3 top-4 bottom-4 w-1 bg-gradient-to-b from-blue-500/50 to-indigo-500/50 rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  {isCustom && (
-                    <button
-                      onClick={() => removeCustomRegion(regionId)}
-                      className="absolute top-3 right-3 z-10 text-xs text-gray-500 hover:text-red-400 transition-colors bg-white/5 hover:bg-red-500/10 rounded px-2 py-0.5 border border-white/10"
-                    >
-                      Remove
-                    </button>
-                  )}
                   {regionInfo && (
                     <p className="text-xs text-gray-500 pl-1 mb-1">
                       {regionInfo.region_name}

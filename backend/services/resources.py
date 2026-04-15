@@ -1,4 +1,4 @@
-
+import math
 import logging
 from typing import Dict, Optional, List
 from datetime import datetime, timedelta, date
@@ -138,8 +138,8 @@ class ResourceService:
         )
         
         # 3. Apply Multipliers
-        general_beds = int(active_cases * params.hospitalization_rate)
-        icu_beds = int(active_cases * params.icu_rate)
+        general_beds = math.ceil(active_cases * params.hospitalization_rate)
+        icu_beds = math.ceil(active_cases * params.icu_rate)
         # Nurse ratio is per patient (hospitalized), usually. Spec says generic nurse ratio.
         # Let's assume nurse_ratio is per hospitalized patient.
         # Spec says: "1 nurse per 10 patients" -> ratio 0.1
@@ -147,9 +147,9 @@ class ResourceService:
         # Usually ICU needs 1:1 or 1:2. General 1:10.
         # For MVP, applying simpler logic: Total Hospitalized * nurse_ratio
         total_hospitalized = general_beds + icu_beds
-        nurses = int(total_hospitalized * params.nurse_ratio)
+        nurses = math.ceil(total_hospitalized * params.nurse_ratio)
         
-        oxygen_cylinders = int(total_hospitalized * params.oxygen_rate)
+        oxygen_cylinders = math.ceil(total_hospitalized * params.oxygen_rate)
 
         # 4. Construct Response
         return ResourcePredictionResponse(

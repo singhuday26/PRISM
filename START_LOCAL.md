@@ -12,7 +12,7 @@ This script will automatically start MongoDB (if local), the API server, and the
 # 2. Run the start script
 python scripts/start_prism.py
 ```
-*   **React Frontend**: [http://localhost:8000/ui/](http://localhost:8000/ui/)
+*   **React Frontend**: [http://localhost:8000](http://localhost:8000)
 *   **Streamlit Dashboard**: [http://localhost:8501](http://localhost:8501)
 *   **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
