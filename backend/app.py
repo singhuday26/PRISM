@@ -74,6 +74,15 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     
+    @app.get("/")
+    def read_root():
+        """Root endpoint to verify the API is online."""
+        return {
+            "status": "online", 
+            "project": "PRISM", 
+            "message": "Backend API is running. Visit /docs for the API schema."
+        }
+    
     # Add CORS middleware
     if settings.enable_cors:
         app.add_middleware(
