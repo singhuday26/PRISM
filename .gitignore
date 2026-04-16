@@ -30,6 +30,11 @@ env/
 # Environment Variables
 .env
 .env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+.env.staging
 
 # IDE
 .vscode/
