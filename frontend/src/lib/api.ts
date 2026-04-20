@@ -64,9 +64,15 @@ async function authFetch(url: string, init?: RequestInit): Promise<Response> {
 
 export interface ResourceDemand {
   general_beds: number;
+  general_beds_capacity?: number;
+  general_beds_occupied?: number;
   icu_beds: number;
+  icu_beds_capacity?: number;
+  icu_beds_occupied?: number;
   nurses: number;
+  nurses_on_duty?: number;
   oxygen_cylinders: number;
+  oxygen_cylinders_stock?: number;
 }
 
 export interface ResourcePrediction {

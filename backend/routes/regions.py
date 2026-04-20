@@ -50,17 +50,42 @@ def list_regions(disease: Optional[str] = Query(None, description="Filter by dis
 
 @router.get("/diseases")
 def list_diseases():
-    """List all available diseases in the database."""
+    """List all available diseases with full metadata, derived from case data."""
     try:
         db = get_db()
-        # Get distinct diseases from regions collection
-        diseases = db["regions"].distinct("disease")
-        # Filter out None values
-        diseases = [d for d in diseases if d is not None]
-        diseases.sort()
+        # Get distinct disease IDs present in our epidemiological data (cases_daily)
+        # instead of the regions collection which doesn't store this field
+        disease_ids = db["cases_daily"].distinct("disease")
+        disease_ids = [d for d in disease_ids if d is not None]
         
-        logger.info(f"Retrieved {len(diseases)} diseases")
-        return {"diseases": diseases, "count": len(diseases)}
+        # Get registry metadata
+        from backend.disease_config import get_disease_registry
+        registry = get_disease_registry()
+        
+        disease_list = []
+        for d_id in disease_ids:
+            profile = registry.get_disease(d_id)
+            if profile:
+                disease_list.append({
+                    "disease_id": profile.disease_id,
+                    "name": profile.name,
+                    "transmission_mode": profile.transmission_mode,
+                    "severity": profile.severity
+                })
+            else:
+                # Fallback for data present in cases but missing in registry
+                disease_list.append({
+                    "disease_id": d_id,
+                    "name": str(d_id).replace("_", " ").title(),
+                    "transmission_mode": "unknown",
+                    "severity": "medium"
+                })
+        
+        # Sort alphabetically by name
+        disease_list.sort(key=lambda x: x["name"])
+        
+        logger.info(f"Retrieved {len(disease_list)} diseases from case data")
+        return {"diseases": disease_list, "count": len(disease_list)}
     except PyMongoError as e:
         logger.error(f"Database error listing diseases: {e}")
         raise HTTPException(

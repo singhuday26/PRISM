@@ -180,9 +180,16 @@ class RegionsResponse(BaseModel):
     disease: Optional[str] = Field(default=None, description="Disease filter applied")
 
 
+class DiseaseMeta(BaseModel):
+    """Subset of disease metadata for listing."""
+    disease_id: str = Field(description="Unique identifier")
+    name: str = Field(description="Display name")
+    transmission_mode: Optional[str] = Field(None, description="Primary transmission path")
+    severity: Optional[str] = Field(None, description="Severity level")
+
 class DiseasesResponse(BaseModel):
     """Response for diseases listing."""
-    diseases: List[str] = Field(description="List of available diseases")
+    diseases: List[DiseaseMeta] = Field(description="List of available diseases")
     count: int = Field(ge=0, description="Number of diseases")
 
 
@@ -244,11 +251,20 @@ class ResourceConfig(BaseModel):
     resource_params: ResourceConfigParams = Field(description="Resource calculation parameters")
 
 class ResourceDemand(BaseModel):
-    """Predicted resource requirements."""
-    general_beds: int = Field(ge=0, description="General ward beds needed")
-    icu_beds: int = Field(ge=0, description="ICU beds needed")
+    """Predicted resource requirements with capacity context."""
+    general_beds: int = Field(ge=0, description="General ward beds needed (Predicted)")
+    general_beds_capacity: Optional[int] = Field(default=0, description="Total general beds available")
+    general_beds_occupied: Optional[int] = Field(default=0, description="Current general beds occupied")
+    
+    icu_beds: int = Field(ge=0, description="ICU beds needed (Predicted)")
+    icu_beds_capacity: Optional[int] = Field(default=0, description="Total ICU beds available")
+    icu_beds_occupied: Optional[int] = Field(default=0, description="Current ICU beds occupied")
+    
     nurses: int = Field(ge=0, description="Nursing staff needed")
+    nurses_on_duty: Optional[int] = Field(default=0, description="Nurses currently active")
+    
     oxygen_cylinders: int = Field(ge=0, description="Oxygen cylinders needed per day")
+    oxygen_cylinders_stock: Optional[int] = Field(default=0, description="Current oxygen stock")
 
 class ResourcePredictionResponse(BaseModel):
     """Response for resource prediction endpoint."""
@@ -256,8 +272,8 @@ class ResourcePredictionResponse(BaseModel):
     date: str = Field(description="Date of prediction")
     disease: str = Field(description="Disease calculated for")
     forecasted_cases: int = Field(ge=0, description="Predicted active cases")
-    resources: ResourceDemand = Field(description="Calculated resource demand")
-    shortage_risk: bool = Field(default=False, description="Whether demand exceeds capacity (if known)")
+    resources: ResourceDemand = Field(description="Calculated resource demand and current capacity")
+    shortage_risk: bool = Field(default=False, description="True if demand exceeds available capacity")
 
 
 # ============================================================================

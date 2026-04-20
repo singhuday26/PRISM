@@ -26,7 +26,7 @@ export function Resources() {
   // Load diseases
   useEffect(() => {
     fetchDiseases()
-      .then((d) => setDiseases(d.diseases))
+      .then((d) => setDiseases(d && Array.isArray(d.diseases) ? d.diseases : []))
       .catch((e) => {
         console.error(e);
         error("Failed to load diseases");
@@ -38,7 +38,7 @@ export function Resources() {
     setRegionsLoading(true);
     fetchRegions()
       .then((r) => {
-        setAllRegions(r.regions);
+        setAllRegions(r && Array.isArray(r.regions) ? r.regions : []);
       })
       .catch((e) => {
         console.error(e);
@@ -54,7 +54,8 @@ export function Resources() {
       setAlertsLoading(true);
       try {
         const data = await fetchAlerts(undefined, disease, 50);
-        const highRiskRegions = data.alerts
+        const alerts = data && Array.isArray(data.alerts) ? data.alerts : [];
+        const highRiskRegions = alerts
           .filter(
             (alert: Alert) =>
               alert.risk_level === "CRITICAL" || alert.risk_level === "HIGH" ||
@@ -87,7 +88,7 @@ export function Resources() {
   // Otherwise, if showAllAlerts is true, show up to 4 critical alerts.
   const displayRegions = selectedRegion 
     ? [selectedRegion.toUpperCase()] 
-    : (showAllAlerts ? criticalRegions.slice(0, 4).map(r => r.toUpperCase()) : []);
+    : (showAllAlerts && Array.isArray(criticalRegions) ? criticalRegions.slice(0, 4).map(r => r.toUpperCase()) : []);
 
   return (
     <div className="space-y-8">
@@ -127,12 +128,13 @@ export function Resources() {
               onChange={(e) => setDisease(e.target.value)}
               className="appearance-none bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-2 text-sm text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#E07A5F]/40 cursor-pointer shadow-sm"
             >
-              {diseases.map((d) => (
-                <option key={d.disease_id} value={d.disease_id}>
-                  {d.name}
-                </option>
-              ))}
-              {diseases.length === 0 && (
+              {Array.isArray(diseases) && diseases.length > 0 ? (
+                diseases.map((d) => (
+                  <option key={d?.disease_id || Math.random()} value={d?.disease_id || ""}>
+                    {d?.name || d?.disease_id || "Unknown Disease"}
+                  </option>
+                ))
+              ) : (
                 <option value="DENGUE">Dengue Fever</option>
               )}
             </select>
@@ -153,9 +155,9 @@ export function Resources() {
             <option value="" className="text-slate-500">
               {regionsLoading ? "Loading regions…" : "Select a region to focus on…"}
             </option>
-            {allRegions.map((r) => (
-              <option key={r.region_id} value={r.region_id}>
-                {r.region_name} ({r.region_id})
+            {(Array.isArray(allRegions) ? allRegions : []).map((r) => (
+              <option key={r?.region_id || Math.random()} value={r?.region_id || ""}>
+                {r?.region_name || r?.region_id || "Unknown Region"} ({r?.region_id || "???"})
               </option>
             ))}
           </select>
@@ -185,18 +187,18 @@ export function Resources() {
             <Skeleton className="h-[200px] w-full rounded-xl bg-slate-100" />
             <Skeleton className="h-[200px] w-full rounded-xl bg-slate-100" />
           </div>
-        ) : displayRegions.length > 0 ? (
+        ) : (Array.isArray(displayRegions) ? displayRegions : []).length > 0 ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {displayRegions.map((regionId) => {
-              const regionInfo = allRegions.find(
-                (r) => r.region_id.toUpperCase() === regionId.toUpperCase(),
+            {(Array.isArray(displayRegions) ? displayRegions : []).map((regionId) => {
+              const regionInfo = (Array.isArray(allRegions) ? allRegions : []).find(
+                (r) => r?.region_id?.toUpperCase() === regionId?.toUpperCase(),
               );
               return (
-                <div key={regionId} className="relative group">
+                <div key={regionId || Math.random()} className="relative group">
                   <div className="absolute -left-3 top-4 bottom-4 w-1 bg-gradient-to-b from-[#E07A5F] to-slate-200 rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
                   {regionInfo && (
                     <p className="text-xs font-serif font-medium text-slate-500 pl-1 mb-1">
-                      {regionInfo.region_name}
+                      {regionInfo?.region_name || "Region Data Pending"}
                     </p>
                   )}
                   <BedShortageWidget

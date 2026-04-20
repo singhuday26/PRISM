@@ -35,13 +35,13 @@ export function Analysis() {
 
   useEffect(() => {
     fetchRegions()
-      .then((r) => setRegions(r.regions))
+      .then((r) => setRegions(r && Array.isArray(r.regions) ? r.regions : []))
       .catch((e) => {
         console.error(e);
         error("Failed to load regions");
       });
     fetchDiseases()
-      .then((d) => setDiseases(d.diseases))
+      .then((d) => setDiseases(d && Array.isArray(d.diseases) ? d.diseases : []))
       .catch((e) => {
         console.error(e);
         error("Failed to load diseases");
@@ -73,111 +73,123 @@ export function Analysis() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-slate-800 mb-2">Analysis</h1>
+          <h1 className="text-2xl font-serif font-bold text-slate-800 mb-2">
+            Regional Analysis
+          </h1>
           <p className="text-slate-500">
-            Predictive modeling and historical trend analysis.
+            Historical trends and AI-driven forecasting models.
           </p>
         </div>
         <div className="flex gap-3 items-center">
           <select
             value={regionId}
             onChange={(e) => setRegionId(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#E07A5F]/40 shadow-sm"
+            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
-            <option value="" className="text-slate-500">All Regions</option>
-            {regions.map((r) => (
-              <option key={r.region_id} value={r.region_id}>
-                {r.region_name}
+            <option value="">All Regions</option>
+            {(Array.isArray(regions) ? regions : []).map((r) => (
+              <option key={r?.region_id || Math.random()} value={r?.region_id || ""}>
+                {r?.region_name || r?.region_id || "Unknown Region"}
               </option>
             ))}
           </select>
           <select
             value={disease}
             onChange={(e) => setDisease(e.target.value)}
-            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#E07A5F]/40 shadow-sm"
+            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
-            {diseases.map((d) => (
-              <option key={d.disease_id} value={d.disease_id}>
-                {d.name}
+            {(Array.isArray(diseases) ? diseases : []).map((d) => (
+              <option key={d?.disease_id || Math.random()} value={d?.disease_id || ""}>
+                {d?.name || d?.disease_id || "Unknown Disease"}
               </option>
             ))}
-            {diseases.length === 0 && (
-              <option value="DENGUE">Dengue Fever</option>
-            )}
           </select>
           <button
             onClick={loadData}
             disabled={loading}
-            className="p-2 bg-[#E07A5F]/10 text-[#E07A5F] rounded-lg hover:bg-[#E07A5F]/20 transition-colors disabled:opacity-50"
+            className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 transition-colors disabled:opacity-50"
+            title="Refresh Data"
           >
             <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
 
-      {/* Forecast Chart */}
-      <div className="bg-white/60 backdrop-blur-md p-6 border border-slate-200 rounded-xl shadow-sm">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
-            <Activity className="w-5 h-5 text-blue-500" />
-          </div>
-          <h3 className="text-lg font-serif font-bold text-slate-800">
-            Forecast Model <span className="text-slate-500 font-sans font-medium text-sm ml-2">({regionId || 'All'} • {disease})</span>
-          </h3>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Forecast Chart */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white/60 backdrop-blur-md border border-slate-200 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Activity className="w-5 h-5 text-terracotta-500" />
+              <h2 className="text-lg font-serif font-bold text-slate-800">
+                Case Forecast (ARIMA-7)
+              </h2>
+            </div>
 
-        <div className="h-[350px] w-full">
-          {loading ? (
-            <Skeleton className="w-full h-full bg-slate-100" />
-          ) : forecasts?.forecasts?.length ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={forecasts.forecasts} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="date" stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                <YAxis stroke="#94a3b8" tick={{ fill: '#64748b', fontSize: 12 }} dx={-10} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#ffffff",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "0.5rem",
-                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                  }}
-                  itemStyle={{ color: "#334155" }}
-                  labelStyle={{ color: "#64748b", marginBottom: "4px" }}
-                />
-                <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                <Line
-                  type="monotone"
-                  dataKey="pred_mean"
-                  stroke="#E07A5F"
-                  strokeWidth={3}
-                  activeDot={{ r: 6, fill: "#E07A5F", stroke: "#ffffff", strokeWidth: 2 }}
-                  name="Predicted Cases"
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="cases"
-                  stroke="#34d399"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  name="Actual Cases"
-                  dot={{ r: 3, fill: "#34d399", strokeWidth: 0 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-200 p-6">
-              <span className="text-2xl opacity-80">📊</span>
-              <p className="text-sm font-medium">No forecast data for this selection</p>
-              {regionId && (
-                <p className="text-xs text-slate-500 text-center max-w-xs">
-                  ARIMA forecasts may not have been generated for <strong className="text-slate-700">{regionId}</strong>.
-                  Try selecting <strong className="text-slate-700">All Regions</strong> or run the pipeline from the Dashboard.
-                </p>
+            <div className="h-[400px] w-full">
+              {loading ? (
+                <div className="h-full w-full flex items-center justify-center bg-slate-50/50 rounded-lg">
+                  <Skeleton className="h-full w-full opacity-20" />
+                </div>
+              ) : forecasts?.forecasts && Array.isArray(forecasts.forecasts) && forecasts.forecasts.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={forecasts.forecasts}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10, fill: "#94a3b8" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "#94a3b8" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(255, 255, 255, 0.9)",
+                        borderRadius: "8px",
+                        border: "1px solid #e2e8f0",
+                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="pred_mean"
+                      name="Predicted Cases"
+                      stroke="#E07A5F"
+                      strokeWidth={3}
+                      dot={{ r: 4, fill: "#E07A5F", strokeWidth: 0 }}
+                      activeDot={{ r: 6 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="pred_upper"
+                      name="Upper Bound (95%)"
+                      stroke="#cbd5e1"
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="pred_lower"
+                      name="Lower Bound (95%)"
+                      stroke="#cbd5e1"
+                      strokeDasharray="5 5"
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full w-full flex flex-col items-center justify-center bg-slate-50/50 rounded-lg text-slate-400 border border-dashed border-slate-200">
+                   <p className="text-sm">No forecast data available for this selection.</p>
+                   <p className="text-xs mt-1">Try running the pipeline in Mission Control.</p>
+                </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -220,7 +232,7 @@ export function Analysis() {
               </div>
 
               {/* Secondary metrics from top region */}
-              {evaluation.top_regions && evaluation.top_regions.length > 0 && (() => {
+              {Array.isArray(evaluation.top_regions) && evaluation.top_regions.length > 0 && (() => {
                 const best = evaluation.top_regions[0];
                 return (
                   <div className="grid grid-cols-3 gap-3">
@@ -253,7 +265,7 @@ export function Analysis() {
                   <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">By MAE</span>
                 </h4>
                 <div className="space-y-2">
-                  {evaluation.top_regions?.slice(0, 5).map((region, i) => (
+                  {(Array.isArray(evaluation.top_regions) ? evaluation.top_regions : [])?.slice(0, 5).map((region, i) => (
                     <div
                       key={region.region_id}
                       className="flex justify-between items-center px-3 py-2 rounded-lg bg-white border border-slate-200 hover:border-slate-300 transition-colors shadow-sm"
@@ -272,7 +284,7 @@ export function Analysis() {
                       </div>
                     </div>
                   ))}
-                  {(!evaluation.top_regions || evaluation.top_regions.length === 0) && (
+                  {(!Array.isArray(evaluation.top_regions) || evaluation.top_regions.length === 0) && (
                     <div className="text-sm text-slate-500 text-center py-4 border border-dashed border-slate-200 rounded-lg">
                       No region evaluation data available
                     </div>
@@ -305,16 +317,18 @@ export function Analysis() {
                 <Skeleton className="h-4 w-5/6 bg-slate-200" />
                 <Skeleton className="h-4 w-4/6 bg-slate-200" />
               </div>
-            ) : forecasts?.forecasts && forecasts.forecasts.length > 0 ? (
+            ) : forecasts?.forecasts && Array.isArray(forecasts.forecasts) && forecasts.forecasts.length > 0 ? (
               <div className="space-y-4">
                 <p className="text-slate-700 text-sm leading-relaxed">
                   Based on the current predictive model (ARIMA), {disease} cases in <strong className="text-slate-900">{regionId || 'Overall'}</strong> are expected to
                   <strong className={
+                    forecasts.forecasts.length > 0 && 
                     forecasts.forecasts[forecasts.forecasts.length - 1].pred_mean > forecasts.forecasts[0].pred_mean
                       ? " text-[#E07A5F]"
                       : " text-emerald-600"
                   }>
-                    {forecasts.forecasts[forecasts.forecasts.length - 1].pred_mean > forecasts.forecasts[0].pred_mean
+                    {forecasts.forecasts.length > 0 && 
+                     forecasts.forecasts[forecasts.forecasts.length - 1].pred_mean > forecasts.forecasts[0].pred_mean
                       ? " increase "
                       : " decrease "}
                   </strong>

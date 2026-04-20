@@ -73,10 +73,11 @@ export function Dashboard() {
       ]);
 
       if (alertsData.status === "fulfilled")
-        setAlertCount(alertsData.value.count);
+        setAlertCount(alertsData.value?.count ?? 0);
+      
       if (regionsData.status === "fulfilled") {
-        setRegionsCount(regionsData.value.count);
-        setRegions(regionsData.value.regions);
+        setRegionsCount(regionsData.value?.count ?? 0);
+        setRegions(regionsData.value && Array.isArray(regionsData.value.regions) ? regionsData.value.regions : []);
         setRegionError(null);
       } else {
         const reason = regionsData.reason;
@@ -85,9 +86,10 @@ export function Dashboard() {
         setRegionError(`Failed to load the regions list: ${message}`);
         console.error("Failed to load the regions list", reason);
       }
+      
       if (
         evalData.status === "fulfilled" &&
-        evalData.value.aggregate_mape != null
+        evalData.value?.aggregate_mape != null
       ) {
         setAvgMape(evalData.value.aggregate_mape);
       }
@@ -108,7 +110,7 @@ export function Dashboard() {
     fetchDiseases()
       .then((d) => {
         if (active) {
-          setDiseases(d.diseases);
+          setDiseases(d && Array.isArray(d.diseases) ? d.diseases : []);
         }
       })
       .catch((e) => console.error("Failed to load diseases", e));
@@ -145,18 +147,17 @@ export function Dashboard() {
             aria-label="Select region"
             className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
-            {regions.map((r) => (
-              <option
-                key={r.region_id}
-                value={r.region_id}
-              >
-                {r.region_name}
-              </option>
-            ))}
-            {regions.length === 0 && (
-              <option value="IN-MH">
-                Maharashtra
-              </option>
+            {Array.isArray(regions) && regions.length > 0 ? (
+              regions.map((r) => (
+                <option
+                  key={r?.region_id || Math.random().toString()}
+                  value={r?.region_id || ""}
+                >
+                  {r?.region_name || r?.region_id || "Unknown Region"}
+                </option>
+              ))
+            ) : (
+              <option value="IN-MH">Maharashtra</option>
             )}
           </select>
           <select
@@ -165,18 +166,17 @@ export function Dashboard() {
             aria-label="Select disease"
             className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
-            {diseases.map((d) => (
-              <option
-                key={d.disease_id}
-                value={d.disease_id}
-              >
-                {d.name}
-              </option>
-            ))}
-            {diseases.length === 0 && (
-              <option value="DENGUE">
-                Dengue Fever
-              </option>
+            {Array.isArray(diseases) && diseases.length > 0 ? (
+              diseases.map((d) => (
+                <option
+                  key={d?.disease_id || Math.random().toString()}
+                  value={d?.disease_id || ""}
+                >
+                  {d?.name || d?.disease_id || "Unknown Disease"}
+                </option>
+              ))
+            ) : (
+              <option value="DENGUE">Dengue Fever</option>
             )}
           </select>
         </div>
@@ -202,20 +202,20 @@ export function Dashboard() {
         <MetricCard
           icon={<AlertTriangle className="w-5 h-5 text-amber-400" />}
           label="Active Alerts"
-          value={alertCount}
-          subtext={`For ${disease}`}
+          value={alertCount ?? 0}
+          subtext={`For ${disease || "current disease"}`}
           color="bg-amber-500/10"
         />
         <MetricCard
           icon={<MapPin className="w-5 h-5 text-blue-400" />}
           label="Regions Monitored"
-          value={regionsCount}
+          value={regionsCount ?? 0}
           color="bg-blue-500/10"
         />
         <MetricCard
           icon={<Activity className="w-5 h-5 text-emerald-400" />}
           label="Diseases Tracked"
-          value={diseases.length || "—"}
+          value={(diseases || []).length || "—"}
           color="bg-emerald-500/10"
         />
         <MetricCard
