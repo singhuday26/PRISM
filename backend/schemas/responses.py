@@ -259,6 +259,10 @@ class ResourceDemand(BaseModel):
     icu_beds: int = Field(ge=0, description="ICU beds needed (Predicted)")
     icu_beds_capacity: Optional[int] = Field(default=0, description="Total ICU beds available")
     icu_beds_occupied: Optional[int] = Field(default=0, description="Current ICU beds occupied")
+
+    ventilators: Optional[int] = Field(default=0, ge=0, description="Ventilators needed (Predicted)")
+    ventilators_capacity: Optional[int] = Field(default=0, description="Total ventilators available")
+    ventilators_occupied: Optional[int] = Field(default=0, description="Current ventilators occupied")
     
     nurses: int = Field(ge=0, description="Nursing staff needed")
     nurses_on_duty: Optional[int] = Field(default=0, description="Nurses currently active")
@@ -274,6 +278,8 @@ class ResourcePredictionResponse(BaseModel):
     forecasted_cases: int = Field(ge=0, description="Predicted active cases")
     resources: ResourceDemand = Field(description="Calculated resource demand and current capacity")
     shortage_risk: bool = Field(default=False, description="True if demand exceeds available capacity")
+    shortage_level: Optional[str] = Field(default="SAFE", description="Overall shortage severity (SAFE/WARNING/CRITICAL)")
+    urgency_score: Optional[float] = Field(default=0.0, ge=0, description="Max utilization ratio used for triage sorting")
 
 
 # ============================================================================

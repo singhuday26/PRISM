@@ -4,9 +4,12 @@ import {
   fetchAlerts,
   fetchDiseases,
   fetchRegions,
+  predictResources,
+  getTodayISO,
   type Alert,
   type DiseaseInfo,
   type Region,
+  type ResourcePrediction,
 } from "../lib/api";
 import { AlertTriangle, Activity, ChevronDown } from "lucide-react";
 import { useToast } from "../context/ToastContext";
@@ -20,13 +23,41 @@ export function Resources() {
   const [disease, setDisease] = useState("DENGUE");
   const [diseases, setDiseases] = useState<DiseaseInfo[]>([]);
   const [allRegions, setAllRegions] = useState<Region[]>([]);
+  const [regionUrgency, setRegionUrgency] = useState<Record<string, number>>(
+    {},
+  );
   const [regionsLoading, setRegionsLoading] = useState(true);
   const { error, info } = useToast();
+
+  const toCanonicalRegionId = (value: string): string => {
+    const token = (value || "").trim();
+    if (!token) return "";
+
+    const all = Array.isArray(allRegions) ? allRegions : [];
+    const byId = all.find(
+      (r) => (r?.region_id || "").toUpperCase() === token.toUpperCase(),
+    );
+    if (byId?.region_id) return byId.region_id.toUpperCase();
+
+    const byName = all.find(
+      (r) => (r?.region_name || "").toUpperCase() === token.toUpperCase(),
+    );
+    if (byName?.region_id) return byName.region_id.toUpperCase();
+
+    const fallback = token.toUpperCase();
+    console.warn("Unknown region token from alerts/resources", {
+      input: value,
+      fallback,
+    });
+    return fallback;
+  };
 
   // Load diseases
   useEffect(() => {
     fetchDiseases()
-      .then((d) => setDiseases(d && Array.isArray(d.diseases) ? d.diseases : []))
+      .then((d) =>
+        setDiseases(d && Array.isArray(d.diseases) ? d.diseases : []),
+      )
       .catch((e) => {
         console.error(e);
         error("Failed to load diseases");
@@ -58,8 +89,10 @@ export function Resources() {
         const highRiskRegions = alerts
           .filter(
             (alert: Alert) =>
-              alert.risk_level === "CRITICAL" || alert.risk_level === "HIGH" ||
-              alert.severity === "CRITICAL" || alert.severity === "HIGH",
+              alert.risk_level === "CRITICAL" ||
+              alert.risk_level === "HIGH" ||
+              alert.severity === "CRITICAL" ||
+              alert.severity === "HIGH",
           )
           .map((alert: Alert) => alert.region_id);
 
@@ -80,15 +113,111 @@ export function Resources() {
       }
     }
     loadCriticalRegions();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disease, showAllAlerts]);
 
+  // Build urgency scores from live predictions for sort-priority triage.
+  useEffect(() => {
+    const baseRegionIds = selectedRegion
+      ? [toCanonicalRegionId(selectedRegion)]
+      : (Array.isArray(criticalRegions) ? criticalRegions : []).map((r) =>
+          toCanonicalRegionId(r),
+        );
+
+    const candidateIds = Array.from(new Set(baseRegionIds.filter(Boolean)));
+    if (candidateIds.length === 0) {
+      setRegionUrgency({});
+      return;
+    }
+
+    let active = true;
+    const targetDate = getTodayISO();
+
+    const computePredictionUrgency = (
+      prediction: ResourcePrediction,
+    ): number => {
+      if (typeof prediction.urgency_score === "number") {
+        return prediction.urgency_score;
+      }
+      const r = prediction.resources ?? {};
+      const safeRatio = (
+        need?: number,
+        occupied?: number,
+        capacity?: number,
+      ) => {
+        const n = Number(need ?? 0);
+        const o = Number(occupied ?? 0);
+        const c = Number(capacity ?? 0);
+        return c > 0 ? (n + o) / c : 0;
+      };
+
+      const general = safeRatio(
+        r.general_beds,
+        r.general_beds_occupied,
+        r.general_beds_capacity,
+      );
+      const icu = safeRatio(
+        r.icu_beds,
+        r.icu_beds_occupied,
+        r.icu_beds_capacity,
+      );
+      const vent = safeRatio(
+        r.ventilators,
+        r.ventilators_occupied,
+        r.ventilators_capacity,
+      );
+      const nurses = safeRatio(r.nurses, 0, r.nurses_on_duty);
+      return Math.max(general, icu, vent, nurses);
+    };
+
+    Promise.all(
+      candidateIds.map(async (regionId) => {
+        try {
+          const prediction = await predictResources({
+            region_id: regionId,
+            date: targetDate,
+            disease,
+          });
+          return { regionId, urgency: computePredictionUrgency(prediction) };
+        } catch (fetchErr) {
+          console.warn("Failed to compute urgency for region", {
+            regionId,
+            fetchErr,
+          });
+          return { regionId, urgency: 0 };
+        }
+      }),
+    ).then((entries) => {
+      if (!active) return;
+      const urgencyMap: Record<string, number> = {};
+      for (const entry of entries) {
+        urgencyMap[entry.regionId] = entry.urgency;
+      }
+      setRegionUrgency(urgencyMap);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedRegion, criticalRegions, disease, allRegions]);
+
   // Build display list: if a region is selected, ONLY show that region.
   // Otherwise, if showAllAlerts is true, show up to 4 critical alerts.
-  const displayRegions = selectedRegion 
-    ? [selectedRegion.toUpperCase()] 
-    : (showAllAlerts && Array.isArray(criticalRegions) ? criticalRegions.slice(0, 4).map(r => r.toUpperCase()) : []);
+  const unsortedRegions = selectedRegion
+    ? [toCanonicalRegionId(selectedRegion)]
+    : showAllAlerts && Array.isArray(criticalRegions)
+      ? criticalRegions.map((r) => toCanonicalRegionId(r))
+      : [];
+
+  const uniqueDisplayRegions = Array.from(
+    new Set(unsortedRegions.filter(Boolean)),
+  );
+  const displayRegions = uniqueDisplayRegions
+    .sort((a, b) => (regionUrgency[b] ?? 0) - (regionUrgency[a] ?? 0))
+    .slice(0, selectedRegion ? 1 : 4);
 
   return (
     <div className="space-y-8">
@@ -126,11 +255,16 @@ export function Resources() {
             <select
               value={disease}
               onChange={(e) => setDisease(e.target.value)}
+              title="Select disease"
+              aria-label="Select disease"
               className="appearance-none bg-white border border-slate-200 rounded-lg pl-3 pr-8 py-2 text-sm text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#E07A5F]/40 cursor-pointer shadow-sm"
             >
               {Array.isArray(diseases) && diseases.length > 0 ? (
                 diseases.map((d) => (
-                  <option key={d?.disease_id || Math.random()} value={d?.disease_id || ""}>
+                  <option
+                    key={d?.disease_id || Math.random()}
+                    value={d?.disease_id || ""}
+                  >
                     {d?.name || d?.disease_id || "Unknown Disease"}
                   </option>
                 ))
@@ -150,14 +284,22 @@ export function Resources() {
             value={selectedRegion}
             onChange={(e) => setSelectedRegion(e.target.value)}
             disabled={regionsLoading}
+            title="Select region"
+            aria-label="Select region"
             className="w-full appearance-none bg-white border border-slate-200 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#E07A5F]/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             <option value="" className="text-slate-500">
-              {regionsLoading ? "Loading regions…" : "Select a region to focus on…"}
+              {regionsLoading
+                ? "Loading regions…"
+                : "Select a region to focus on…"}
             </option>
             {(Array.isArray(allRegions) ? allRegions : []).map((r) => (
-              <option key={r?.region_id || Math.random()} value={r?.region_id || ""}>
-                {r?.region_name || r?.region_id || "Unknown Region"} ({r?.region_id || "???"})
+              <option
+                key={r?.region_id || Math.random()}
+                value={r?.region_id || ""}
+              >
+                {r?.region_name || r?.region_id || "Unknown Region"} (
+                {r?.region_id || "???"})
               </option>
             ))}
           </select>
@@ -178,7 +320,9 @@ export function Resources() {
         <div className="flex items-center gap-3">
           <Activity className="w-5 h-5 text-slate-600" />
           <h2 className="text-lg font-serif font-bold text-slate-800">
-            {selectedRegion ? "Resource Demands" : "Top Critical Shortage Predictions"}
+            {selectedRegion
+              ? "Resource Demands"
+              : "Top Critical Shortage Predictions"}
           </h2>
         </div>
 
@@ -189,35 +333,46 @@ export function Resources() {
           </div>
         ) : (Array.isArray(displayRegions) ? displayRegions : []).length > 0 ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {(Array.isArray(displayRegions) ? displayRegions : []).map((regionId) => {
-              const regionInfo = (Array.isArray(allRegions) ? allRegions : []).find(
-                (r) => r?.region_id?.toUpperCase() === regionId?.toUpperCase(),
-              );
-              return (
-                <div key={regionId || Math.random()} className="relative group">
-                  <div className="absolute -left-3 top-4 bottom-4 w-1 bg-gradient-to-b from-[#E07A5F] to-slate-200 rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
-                  {regionInfo && (
-                    <p className="text-xs font-serif font-medium text-slate-500 pl-1 mb-1">
-                      {regionInfo?.region_name || "Region Data Pending"}
-                    </p>
-                  )}
-                  <BedShortageWidget
-                    regionId={regionId}
-                    disease={disease}
-                    capacityThreshold={150}
-                  />
-                </div>
-              );
-            })}
+            {(Array.isArray(displayRegions) ? displayRegions : []).map(
+              (regionId) => {
+                const regionInfo = (
+                  Array.isArray(allRegions) ? allRegions : []
+                ).find(
+                  (r) =>
+                    r?.region_id?.toUpperCase() === regionId?.toUpperCase(),
+                );
+                return (
+                  <div
+                    key={regionId || Math.random()}
+                    className="relative group"
+                  >
+                    <div className="absolute -left-3 top-4 bottom-4 w-1 bg-gradient-to-b from-[#E07A5F] to-slate-200 rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
+                    {regionInfo && (
+                      <p className="text-xs font-serif font-medium text-slate-500 pl-1 mb-1">
+                        {regionInfo?.region_name || "Region Data Pending"}
+                      </p>
+                    )}
+                    <BedShortageWidget
+                      regionId={regionId}
+                      disease={disease}
+                      capacityThreshold={150}
+                    />
+                  </div>
+                );
+              },
+            )}
           </div>
         ) : (
           <div className="bg-white/60 backdrop-blur-md p-16 text-center text-slate-500 border border-slate-200 rounded-xl border-dashed shadow-sm">
             <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4 border border-emerald-100">
               <AlertTriangle className="w-8 h-8 text-emerald-500 opacity-80" />
             </div>
-            <h3 className="text-lg font-serif font-bold text-slate-800 mb-2">No Critical Shortages</h3>
+            <h3 className="text-lg font-serif font-bold text-slate-800 mb-2">
+              No Critical Shortages
+            </h3>
             <p className="max-w-md mx-auto text-sm">
-              System health is stable. Use the dropdown above to manually add a region for monitoring.
+              System health is stable. Use the dropdown above to manually add a
+              region for monitoring.
             </p>
           </div>
         )}

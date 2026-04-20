@@ -29,7 +29,7 @@ def get_resource_service():
     description="Generate resource demand forecast based on predicted active cases."
 )
 def predict_resources(
-    region_id: str,
+    region_id: str = Query(..., description="Region identifier or region name"),
     date: str = Query(..., description="Target date (YYYY-MM-DD)"),
     disease: str = Query(..., description="Disease type"),
     service: ResourceService = Depends(get_resource_service)
@@ -42,6 +42,11 @@ def predict_resources(
             region_id=region_id,
             target_date=validated_date,
             disease=validated_disease
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
         )
     except (DateValidationError, DiseaseValidationError) as e:
         raise HTTPException(

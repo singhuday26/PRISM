@@ -69,6 +69,9 @@ export interface ResourceDemand {
   icu_beds: number;
   icu_beds_capacity?: number;
   icu_beds_occupied?: number;
+  ventilators?: number;
+  ventilators_capacity?: number;
+  ventilators_occupied?: number;
   nurses: number;
   nurses_on_duty?: number;
   oxygen_cylinders: number;
@@ -82,6 +85,8 @@ export interface ResourcePrediction {
   forecasted_cases: number;
   resources: ResourceDemand;
   shortage_risk: boolean;
+  shortage_level?: "SAFE" | "WARNING" | "CRITICAL";
+  urgency_score?: number;
 }
 
 export interface PredictResourcesParams {
@@ -406,7 +411,37 @@ export async function predictResources(
     throw new Error(`API Error: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const raw = await response.json();
+  const payload = (raw?.data ?? raw?.prediction ?? raw) as ResourcePrediction;
+
+  if (!payload || typeof payload !== "object" || !payload.resources) {
+    console.warn("Missing resource payload", raw);
+    throw new Error("Malformed resources payload from API");
+  }
+
+  const resources = payload.resources ?? ({} as ResourceDemand);
+  return {
+    ...payload,
+    forecasted_cases: Number(payload.forecasted_cases ?? 0),
+    shortage_risk: Boolean(payload.shortage_risk),
+    urgency_score: Number(payload.urgency_score ?? 0),
+    shortage_level: payload.shortage_level ?? "SAFE",
+    resources: {
+      general_beds: Number(resources.general_beds ?? 0),
+      general_beds_capacity: Number(resources.general_beds_capacity ?? 0),
+      general_beds_occupied: Number(resources.general_beds_occupied ?? 0),
+      icu_beds: Number(resources.icu_beds ?? 0),
+      icu_beds_capacity: Number(resources.icu_beds_capacity ?? 0),
+      icu_beds_occupied: Number(resources.icu_beds_occupied ?? 0),
+      ventilators: Number(resources.ventilators ?? 0),
+      ventilators_capacity: Number(resources.ventilators_capacity ?? 0),
+      ventilators_occupied: Number(resources.ventilators_occupied ?? 0),
+      nurses: Number(resources.nurses ?? 0),
+      nurses_on_duty: Number(resources.nurses_on_duty ?? 0),
+      oxygen_cylinders: Number(resources.oxygen_cylinders ?? 0),
+      oxygen_cylinders_stock: Number(resources.oxygen_cylinders_stock ?? 0),
+    },
+  };
 }
 
 /**
