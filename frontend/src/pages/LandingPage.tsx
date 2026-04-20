@@ -113,14 +113,19 @@ export function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src="/prism-logo.png"
-              alt="PRISM Logo"
-              className="h-8 md:h-10 w-auto object-contain"
-            />
-            <span className="font-serif text-xl md:text-2xl font-bold tracking-tight text-slate-900">
-              PRISM
-            </span>
+            <a
+              href="http://localhost:5173/"
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <img
+                src="/prism-logo.png"
+                alt="PRISM Logo"
+                className="h-8 md:h-10 w-auto object-contain"
+              />
+              <span className="font-serif text-xl md:text-2xl font-bold tracking-tight text-slate-900">
+                PRISM
+              </span>
+            </a>
           </div>
           <div className="flex items-center gap-6">
             <a

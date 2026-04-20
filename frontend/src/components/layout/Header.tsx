@@ -1,5 +1,12 @@
 import { useState, useEffect } from "react";
-import { AlertTriangle, Bell, CheckCircle, LogOut, Menu, UserCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  CheckCircle,
+  LogOut,
+  Menu,
+  UserCircle,
+} from "lucide-react";
 import { fetchAlerts, type Alert } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -56,7 +63,9 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
   }, []);
 
   const style = latestAlert
-    ? (SEVERITY_STYLES[latestAlert.risk_level || latestAlert.severity || "MEDIUM"] ?? SEVERITY_STYLES.MEDIUM)
+    ? (SEVERITY_STYLES[
+        latestAlert.risk_level || latestAlert.severity || "MEDIUM"
+      ] ?? SEVERITY_STYLES.MEDIUM)
     : null;
 
   return (
@@ -64,28 +73,36 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
       <div className="flex items-center gap-3 w-full sm:w-auto overflow-hidden">
         <button
           onClick={onMenuClick}
+          aria-label="Open navigation menu"
+          title="Open menu"
           className="md:hidden p-2 -ml-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors shrink-0"
         >
           <Menu className="w-5 h-5" />
         </button>
-        <div className="md:hidden flex items-center gap-2">
-            <img 
-            src="/prism-logo.png" 
-            alt="PRISM Logo" 
+        <a
+          href="http://localhost:5173/"
+          className="md:hidden flex items-center gap-2"
+        >
+          <img
+            src="/prism-logo.png"
+            alt="PRISM Logo"
             className="h-9 w-auto object-contain"
-            />
-            <span className="font-serif font-bold text-slate-800 text-lg tracking-tight">PRISM</span>
-        </div>
+          />
+          <span className="font-serif font-bold text-slate-800 text-lg tracking-tight">
+            PRISM
+          </span>
+        </a>
         {/* Alert Banner */}
         {latestAlert && style ? (
           <div
             className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2 rounded ${style.bg} border ${style.border} truncate`}
           >
             <AlertTriangle className={`w-4 h-4 shrink-0 ${style.icon}`} />
-            <span className={`text-xs sm:text-sm ${style.text} font-medium tracking-tight truncate`}>
+            <span
+              className={`text-xs sm:text-sm ${style.text} font-medium tracking-tight truncate`}
+            >
               {latestAlert.risk_level || latestAlert.severity || "MEDIUM"}:{" "}
-              {latestAlert.reason ||
-                `Alert in ${latestAlert.region_id}`}
+              {latestAlert.reason || `Alert in ${latestAlert.region_id}`}
             </span>
           </div>
         ) : (
@@ -102,8 +119,11 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
       <div className="flex items-center gap-2 sm:gap-4 shrink-0 ml-2 relative">
         <div className="relative">
           <button
-            onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); }}
-            className={`p-2 rounded transition-colors relative hidden sm:block ${isNotificationsOpen ? 'bg-slate-100 text-slate-800' : 'hover:bg-slate-50 text-slate-500 hover:text-slate-800'}`}
+            onClick={() => {
+              setIsNotificationsOpen(!isNotificationsOpen);
+              setIsProfileOpen(false);
+            }}
+            className={`p-2 rounded transition-colors relative hidden sm:block ${isNotificationsOpen ? "bg-slate-100 text-slate-800" : "hover:bg-slate-50 text-slate-500 hover:text-slate-800"}`}
             title={`${alertCount} recent alerts`}
           >
             <Bell className="w-5 h-5" />
@@ -116,17 +136,29 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
           {isNotificationsOpen && (
             <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-slate-200 rounded shadow-sm overflow-hidden z-[60]">
-              <div className="p-3 border-b border-slate-200 font-serif font-semibold text-slate-800">Notifications</div>
+              <div className="p-3 border-b border-slate-200 font-serif font-semibold text-slate-800">
+                Notifications
+              </div>
               <div className="max-h-96 overflow-y-auto">
                 {alerts.length > 0 ? (
                   alerts.map((alert, i) => (
-                    <div key={i} className="p-3 border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                      <div className="text-sm font-medium text-slate-800">{alert.severity || alert.risk_level} Alert</div>
-                      <div className="text-xs text-slate-500 mt-1">{alert.reason || `${alert.disease || 'Alert'} in ${alert.region_id}`}</div>
+                    <div
+                      key={i}
+                      className="p-3 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="text-sm font-medium text-slate-800">
+                        {alert.severity || alert.risk_level} Alert
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1">
+                        {alert.reason ||
+                          `${alert.disease || "Alert"} in ${alert.region_id}`}
+                      </div>
                     </div>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-sm text-slate-400">No new notifications</div>
+                  <div className="p-4 text-center text-sm text-slate-400">
+                    No new notifications
+                  </div>
                 )}
               </div>
             </div>
@@ -135,12 +167,19 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
         <div className="relative border-l border-slate-200 pl-2 sm:pl-4">
           <button
-            onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); }}
-            className={`flex items-center gap-2 sm:gap-3 p-1 rounded transition-colors ${isProfileOpen ? 'bg-slate-50' : 'hover:bg-slate-50'}`}
+            onClick={() => {
+              setIsProfileOpen(!isProfileOpen);
+              setIsNotificationsOpen(false);
+            }}
+            className={`flex items-center gap-2 sm:gap-3 p-1 rounded transition-colors ${isProfileOpen ? "bg-slate-50" : "hover:bg-slate-50"}`}
           >
             <div className="hidden sm:flex flex-col items-end mr-1 text-left">
-              <span className="text-sm text-slate-800 font-serif font-medium">{user?.username || "User"}</span>
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest">{user?.role || "Viewer"}</span>
+              <span className="text-sm text-slate-800 font-serif font-medium">
+                {user?.username || "User"}
+              </span>
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest">
+                {user?.role || "Viewer"}
+              </span>
             </div>
             <div className="w-7 h-7 sm:w-8 sm:h-8 shrink-0 rounded bg-slate-100 flex items-center justify-center text-xs sm:text-sm font-bold text-slate-600 border border-slate-200">
               {user?.username?.[0].toUpperCase() || "U"}
@@ -153,7 +192,10 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 Account
               </div>
               <button
-                onClick={() => { setIsProfileOpen(false); navigate("/app/profile"); }}
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  navigate("/app/profile");
+                }}
                 className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-800 flex items-center gap-2 transition-colors"
               >
                 <UserCircle className="w-4 h-4 text-slate-400" />
