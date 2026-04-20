@@ -67,30 +67,30 @@ export function EcosystemSummaryStrip({
                         }
                         className={`relative p-3 rounded-xl border transition-all duration-200 text-left cursor-pointer group
               ${isActive
-                                ? `bg-gradient-to-br ${colors} ring-1 ring-white/20 scale-[1.02]`
-                                : "bg-white/[0.03] border-white/5 hover:bg-white/[0.06] hover:border-white/10"
+                                ? `bg-white ring-1 ring-slate-200 border-slate-200 scale-[1.02] shadow-sm`
+                                : "bg-white border-slate-100 hover:bg-slate-50 hover:border-slate-200 shadow-none"
                             }`}
                     >
                         <div className="flex items-center gap-2 mb-2">
-                            <Icon className={`w-4 h-4 ${isActive ? "" : "text-gray-500"}`} />
-                            <span className={`text-[10px] font-semibold uppercase tracking-wider truncate ${isActive ? "" : "text-gray-500"}`}>
+                            <Icon className={`w-4 h-4 ${isActive ? "text-terracotta-500" : "text-slate-400"}`} />
+                            <span className={`text-[10px] font-semibold uppercase tracking-wider truncate ${isActive ? "text-slate-800" : "text-slate-500"}`}>
                                 {cat.label.split(" ")[0]}
                             </span>
                         </div>
-                        <div className="text-xl font-bold text-white mb-1">{cat.count}</div>
+                        <div className="text-xl font-serif font-bold text-slate-800 mb-1">{cat.count}</div>
                         {/* mini health bar */}
-                        <div className="h-1 rounded-full bg-white/10 overflow-hidden">
+                        <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
                             <div
                                 className={`h-full rounded-full transition-all duration-500 ${healthPct >= 70
                                         ? "bg-emerald-500"
                                         : healthPct >= 40
-                                            ? "bg-amber-500"
-                                            : "bg-red-500"
+                                            ? "bg-amber-400"
+                                            : "bg-terracotta-500"
                                     }`}
                                 style={{ width: `${healthPct}%` }}
                             />
                         </div>
-                        <div className="text-[9px] text-gray-600 mt-1">
+                        <div className="text-[9px] text-slate-500 mt-1">
                             {healthPct.toFixed(0)}% health
                         </div>
                     </button>

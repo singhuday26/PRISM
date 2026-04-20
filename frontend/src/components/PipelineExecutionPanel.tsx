@@ -179,7 +179,7 @@ export default function PipelineExecutionPanel({
                 return <SkipForward className="w-5 h-5 text-gray-500" />;
             default:
                 return (
-                    <div className="w-5 h-5 rounded-full border-2 border-white/10" />
+                    <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
                 );
         }
     };
@@ -196,7 +196,7 @@ export default function PipelineExecutionPanel({
                 <button
                     onClick={execute}
                     disabled={panelState === "running"}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition-all duration-200 active:scale-95"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#E07A5F] hover:bg-[#D9664A] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm text-white font-medium transition-all duration-200 active:scale-95"
                     title="Run analytics pipeline"
                 >
                     {panelState === "running" ? (
@@ -235,12 +235,12 @@ export default function PipelineExecutionPanel({
 
             {/* ── Expanded Panel ───────────────────────────────────────── */}
             {expanded && panelState !== "idle" && (
-                <div className="glass-card rounded-xl border border-white/5 overflow-hidden animate-in slide-in-from-top-2 duration-300">
+                <div className="bg-white/60 backdrop-blur-md rounded-xl border border-slate-200 overflow-hidden animate-in slide-in-from-top-2 duration-300">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-white/[0.02]">
+                    <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-[#FAFAFA]">
                         <div className="flex items-center gap-3">
-                            <Database className="w-4 h-4 text-indigo-400" />
-                            <span className="text-sm font-semibold text-white">
+                            <Database className="w-4 h-4 text-slate-700" />
+                            <span className="text-sm font-semibold text-slate-900">
                                 Pipeline Execution
                             </span>
                             <span className="text-xs text-gray-500 font-mono">
@@ -256,7 +256,7 @@ export default function PipelineExecutionPanel({
                             )}
                             <button
                                 onClick={() => setExpanded(false)}
-                                className="text-gray-500 hover:text-gray-300 transition-colors p-1 rounded-md hover:bg-white/5"
+                                className="text-slate-500 hover:text-slate-800 transition-colors p-1 rounded-md hover:bg-slate-100"
                             >
                                 <ChevronUp className="w-4 h-4" />
                             </button>
@@ -264,16 +264,16 @@ export default function PipelineExecutionPanel({
                     </div>
 
                     {/* Steps */}
-                    <div className="divide-y divide-white/[0.03]">
+                    <div className="divide-y divide-slate-100 bg-[#FAFAFA]">
                         {steps.map((step) => {
                             const meta = STEP_META[step.name];
                             return (
                                 <div
                                     key={step.name}
                                     className={`px-5 py-3.5 flex items-center gap-4 transition-colors duration-300 ${step.uiState === "running"
-                                        ? "bg-indigo-500/5"
+                                        ? "bg-slate-50"
                                         : step.uiState === "error"
-                                            ? "bg-red-500/5"
+                                            ? "bg-red-50"
                                             : ""
                                         }`}
                                 >
@@ -283,21 +283,21 @@ export default function PipelineExecutionPanel({
                                     </div>
 
                                     {/* Step icon + label */}
-                                    <div className="flex-shrink-0 p-1.5 rounded-md bg-white/5 text-gray-400">
+                                    <div className="flex-shrink-0 p-1.5 rounded-md bg-slate-200/50 text-slate-500">
                                         {meta?.icon}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <span
                                                 className={`text-sm font-medium ${step.uiState === "skipped"
-                                                    ? "text-gray-500"
-                                                    : "text-white"
+                                                    ? "text-slate-400"
+                                                    : "text-slate-900"
                                                     }`}
                                             >
                                                 {meta?.label ?? step.name}
                                             </span>
                                             {step.uiState === "skipped" && (
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-gray-500 font-medium uppercase tracking-wide">
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium uppercase tracking-wide">
                                                     Skipped
                                                 </span>
                                             )}
@@ -331,7 +331,7 @@ export default function PipelineExecutionPanel({
                                         {step.result &&
                                             step.uiState === "success" &&
                                             step.result.total_records > 0 && (
-                                                <span className="text-xs px-2 py-1 rounded-md bg-white/5 text-gray-400 font-mono tabular-nums">
+                                                <span className="text-xs px-2 py-1 rounded-md bg-slate-100 text-slate-500 font-mono tabular-nums">
                                                     {step.result.total_records.toLocaleString()} total
                                                 </span>
                                             )}
@@ -365,7 +365,7 @@ export default function PipelineExecutionPanel({
                                     if (s.name === 'reset' || s.status !== 'success') return null;
                                     return (
                                         <span key={s.name}>
-                                            <strong className="text-white font-mono">
+                                            <strong className="text-slate-800 font-mono">
                                                 {s.records_created}
                                             </strong>{" "}
                                             {s.name.replace('_', ' ')}

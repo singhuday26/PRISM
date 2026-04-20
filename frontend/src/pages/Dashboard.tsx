@@ -20,10 +20,10 @@ const OperationalMap = lazy(() =>
 
 function MapLoading() {
   return (
-    <div className="h-[500px] glass-card flex items-center justify-center bg-[hsl(240,10%,6%)] border border-white/10 rounded-lg">
+    <div className="h-[500px] bg-white/60 backdrop-blur-md flex items-center justify-center border border-slate-200 rounded-lg">
       <div className="text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p className="text-gray-400 text-sm">Loading map component...</p>
+        <div className="animate-spin w-8 h-8 border-4 border-slate-400 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p className="text-slate-500 text-sm">Loading map component...</p>
       </div>
     </div>
   );
@@ -39,15 +39,15 @@ interface MetricCardProps {
 
 function MetricCard({ icon, label, value, subtext, color }: MetricCardProps) {
   return (
-    <div className="glass-card p-5 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
+    <div className="bg-white/60 backdrop-blur-md border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition-colors">
       <div className="flex items-start justify-between mb-3">
         <div className={`p-2.5 rounded-lg ${color}`}>{icon}</div>
       </div>
-      <div className="text-2xl font-bold text-white mb-1">{value}</div>
-      <div className="text-xs text-gray-400 uppercase tracking-wider font-medium">
+      <div className="text-2xl font-serif font-bold text-slate-800 mb-1">{value}</div>
+      <div className="text-xs text-slate-500 uppercase tracking-wider font-medium">
         {label}
       </div>
-      {subtext && <div className="text-xs text-gray-500 mt-1">{subtext}</div>}
+      {subtext && <div className="text-xs text-slate-400 mt-1">{subtext}</div>}
     </div>
   );
 }
@@ -131,10 +131,10 @@ export function Dashboard() {
       {/* Page Title + Selectors + Pipeline */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-2">
+          <h1 className="text-2xl font-serif font-bold text-slate-800 mb-2">
             Mission Control
           </h1>
-          <p className="text-gray-400">
+          <p className="text-slate-500">
             Real-time resource allocation and outbreak monitoring
           </p>
         </div>
@@ -143,19 +143,18 @@ export function Dashboard() {
             value={regionId}
             onChange={(e) => setRegionId(e.target.value)}
             aria-label="Select region"
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
             {regions.map((r) => (
               <option
                 key={r.region_id}
                 value={r.region_id}
-                className="bg-gray-900"
               >
                 {r.region_name}
               </option>
             ))}
             {regions.length === 0 && (
-              <option value="IN-MH" className="bg-gray-900">
+              <option value="IN-MH">
                 Maharashtra
               </option>
             )}
@@ -164,19 +163,18 @@ export function Dashboard() {
             value={disease}
             onChange={(e) => setDisease(e.target.value)}
             aria-label="Select disease"
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-300"
           >
             {diseases.map((d) => (
               <option
                 key={d.disease_id}
                 value={d.disease_id}
-                className="bg-gray-900"
               >
                 {d.name}
               </option>
             ))}
             {diseases.length === 0 && (
-              <option value="DENGUE" className="bg-gray-900">
+              <option value="DENGUE">
                 Dengue Fever
               </option>
             )}
@@ -187,7 +185,7 @@ export function Dashboard() {
       {regionError && (
         <div
           role="alert"
-          className="glass-card p-4 border border-red-500/30 rounded-xl bg-red-500/10 text-red-200"
+          className="bg-white/60 backdrop-blur-md p-4 border border-terracotta-500/30 rounded-xl bg-terracotta-50 text-terracotta-600"
         >
           <p className="text-sm font-medium">{regionError}</p>
           <p className="text-xs text-red-200/80 mt-1">
@@ -231,7 +229,7 @@ export function Dashboard() {
 
       {/* Critical Metrics Section */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
+        <h2 className="text-xs font-serif font-semibold uppercase tracking-wider text-slate-500 mb-4">
           Resource Demand
         </h2>
         <BedShortageWidget
@@ -245,7 +243,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <section>
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
+            <h2 className="text-xs font-serif font-semibold uppercase tracking-wider text-slate-500 mb-4">
               Operational Map
             </h2>
             <Suspense fallback={<MapLoading />}>
@@ -255,7 +253,7 @@ export function Dashboard() {
         </div>
         <div className="lg:col-span-1">
           <section className="h-full">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-4">
+            <h2 className="text-xs font-serif font-semibold uppercase tracking-wider text-slate-500 mb-4">
               Intelligence Signals
             </h2>
             <EarlyWarningFeed disease={disease} />

@@ -15,7 +15,7 @@ export function Layout() {
                 flex: 1,
                 minHeight: "100vh",
                 width: "100%",
-                backgroundColor: "#0f172a",
+                backgroundColor: "#FAFAFA",
             }}
         >
             <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />

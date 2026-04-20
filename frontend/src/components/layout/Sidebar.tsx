@@ -43,18 +43,22 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             )}
 
             <aside
-                className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-[hsl(240,10%,5%)] border-r border-white/10 flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+                className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
                     }`}
             >
                 {/* Logo */}
-                <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
-                    <h1 className="text-xl font-bold tracking-tight">
-                        <span className="text-blue-400">PRISM</span>
-                        <span className="text-gray-400 font-normal ml-2">COMMAND</span>
-                    </h1>
+                <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 shrink-0">
+                    <Link to="/app" className="flex items-center gap-2">
+                        <img 
+                            src="/prism-logo.png" 
+                            alt="PRISM Logo" 
+                            className="h-10 w-auto object-contain"
+                        />
+                        <span className="font-serif font-bold text-slate-800 text-xl tracking-tight">PRISM</span>
+                    </Link>
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="md:hidden p-2 -mr-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                        className="md:hidden p-2 -mr-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -69,9 +73,9 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                                 <li key={label}>
                                     <Link
                                         to={path}
-                                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                                            ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                                        className={`flex items-center gap-3 px-4 py-3 rounded text-sm font-medium transition-colors border ${isActive
+                                            ? "bg-terracotta-50 text-terracotta-600 border-terracotta-500/20 shadow-none"
+                                            : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 border-transparent shadow-none"
                                             }`}
                                     >
                                         <Icon className="w-5 h-5" />
@@ -84,7 +88,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 </nav>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-white/10 text-xs text-gray-500 shrink-0">
+                <div className="p-4 border-t border-slate-200 text-xs text-slate-400 shrink-0">
                     v1.0.0 — Mission Control
                 </div>
             </aside>

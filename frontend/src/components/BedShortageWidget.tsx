@@ -18,9 +18,9 @@ function MetricCard({ label, value, icon, status, subtitle }: MetricCardProps) {
     };
 
     return (
-        <div className={`glass-card p-6 ${statusClasses[status]}`}>
+        <div className={`bg-white/60 backdrop-blur-md border border-slate-200 rounded-xl shadow-none p-6 ${statusClasses[status]}`}>
             <div className="flex items-start justify-between mb-4">
-                <div className="p-2 rounded-lg bg-white/5">
+                <div className="p-2 rounded-lg bg-slate-100/50">
                     {icon}
                 </div>
                 {status === 'critical' && (
@@ -129,11 +129,11 @@ export function BedShortageWidget({
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-lg font-serif font-semibold text-slate-800">
                     Resource Demand — {disease.toUpperCase()}
                 </h2>
-                <span className="text-sm text-gray-400">
-                    Region: {regionId} • {forecasted_cases} forecasted cases
+                <span className="text-sm text-slate-500">
+                    Region: {regionId} • <span className="text-terracotta-600 font-bold">{forecasted_cases}</span> forecasted cases
                 </span>
             </div>
 
