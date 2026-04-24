@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     smtp_password: str = Field("", env="SMTP_PASSWORD")
     smtp_from: str = Field("noreply@localhost", env="SMTP_FROM")
     smtp_from_name: str = Field("PRISM Alerts", env="SMTP_FROM_NAME")
-    api_url: str = Field("https://prism-6gtg.onrender.com", env="API_URL")
+    api_url: str = Field("https://prism-5onp.onrender.com", env="API_URL")
 
     # JWT Authentication Settings
     secret_key: str = Field("prism_super_secret_key_change_in_production", env="SECRET_KEY")
