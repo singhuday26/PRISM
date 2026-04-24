@@ -50,3 +50,4 @@ npm run dev
 ### 🛑 Troubleshooting
 *   **Port 8000 Busy**: Run `taskkill /IM uvicorn.exe /F` or use a different port.
 *   **Module Not Found**: Ensure you are running commands from the **root directory** (`PRISM/`) and your virtual environment is active.
+### Deployment ready
