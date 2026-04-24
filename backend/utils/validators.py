@@ -10,8 +10,8 @@ from backend.exceptions import (
 )
 
 # Valid granularity types
-GranularityType = Literal["yearly", "monthly", "weekly"]
-VALID_GRANULARITIES: List[str] = ["yearly", "monthly", "weekly"]
+GranularityType = Literal["yearly", "monthly", "weekly", "daily"]
+VALID_GRANULARITIES: List[str] = ["yearly", "monthly", "weekly", "daily"]
 
 # ISO date pattern
 ISO_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")

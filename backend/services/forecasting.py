@@ -17,9 +17,10 @@ LOOKBACK_CONFIG = {
     "yearly": 3,    # 3 years of history
     "monthly": 6,   # 6 months of history
     "weekly": 12,   # 12 weeks of history
+    "daily": 30,    # 30 days of history
 }
 
-GranularityType = Literal["yearly", "monthly", "weekly"]
+GranularityType = Literal["yearly", "monthly", "weekly", "daily"]
 
 
 def _resolve_target_date(

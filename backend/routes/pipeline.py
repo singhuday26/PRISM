@@ -11,6 +11,7 @@ from backend.db import get_db, ensure_indexes
 from backend.services.risk import compute_risk_scores
 from backend.services.alerts import generate_alerts
 from backend.services.arima_forecasting import generate_arima_forecasts
+from backend.services.forecasting import generate_forecasts as generate_naive_forecasts
 from backend.routes.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -108,16 +109,24 @@ def _run_pipeline_task(task_id: str, disease: str, reset: bool, horizon: int, gr
         # ── Step 4: Forecasts ──────────────────────────────────────────────
         t0 = time.time()
         try:
-            forecast_date, forecast_results = generate_arima_forecasts(
-                target_date=None, horizon=horizon, disease=disease, granularity=granularity
-            )
+            if granularity == "daily":
+                forecast_date, forecast_results = generate_naive_forecasts(
+                    target_date=None, horizon=horizon, disease=disease, granularity=granularity
+                )
+                model_type = "Naive"
+            else:
+                forecast_date, forecast_results = generate_arima_forecasts(
+                    target_date=None, horizon=horizon, disease=disease, granularity=granularity
+                )
+                model_type = "ARIMA"
+                
             forecast_count = len(forecast_results)
             total_forecasts = db.forecasts_daily.count_documents({"disease": disease})
             steps.append(_step_result(
                 "forecasts", status="success",
                 duration_ms=int((time.time() - t0) * 1000),
                 records_created=forecast_count, total_records=total_forecasts,
-                detail=f"ARIMA {horizon}-day forecast for {forecast_count} regions",
+                detail=f"{model_type} {horizon}-day forecast for {forecast_count} regions",
             ))
         except Exception as e:
             logger.warning(f"Forecast generation failed: {e}")
@@ -154,7 +163,7 @@ async def run_full_pipeline(
     disease: str = Query("DENGUE", description="Disease to process"),
     reset: bool = Query(False, description="Reset existing derived data"),
     horizon: int = Query(7, description="Forecast horizon"),
-    granularity: str = Query("monthly", description="Data granularity"),
+    granularity: str = Query("daily", description="Data granularity"),
     current_user: dict = Depends(get_current_user)
 ):
     """
