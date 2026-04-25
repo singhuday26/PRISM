@@ -8,6 +8,7 @@ from pymongo.errors import PyMongoError
 
 from backend.db import get_db
 from backend.services.alerts import generate_alerts
+from backend.services.derived_data_bootstrap import ensure_derived_data_for_disease
 from backend.utils.validators import validate_iso_date, validate_disease
 from backend.exceptions import DateValidationError, DiseaseValidationError
 from backend.schemas.responses import AlertsResponse
@@ -74,8 +75,16 @@ def latest(
         
         latest_alert = alerts_col.find_one(filter_query, sort=[("date", DESCENDING)])
         if not latest_alert:
+            if validated_disease:
+                ensure_derived_data_for_disease(validated_disease)
+                latest_alert = alerts_col.find_one(filter_query, sort=[("date", DESCENDING)])
+
+        if not latest_alert:
             logger.warning(f"No alerts found in database{' for disease: ' + validated_disease if validated_disease else ''}")
-            return {"date": None, "alerts": [], "count": 0}
+            response = {"date": None, "alerts": [], "count": 0}
+            if validated_disease:
+                response["disease"] = validated_disease
+            return response
 
         latest_date = latest_alert["date"]
         query = {"date": latest_date}

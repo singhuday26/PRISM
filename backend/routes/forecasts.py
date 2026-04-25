@@ -8,6 +8,7 @@ from pymongo.errors import PyMongoError
 
 from backend.db import get_db
 from backend.services.forecasting import generate_forecasts
+from backend.services.derived_data_bootstrap import ensure_derived_data_for_disease
 from backend.utils.validators import (
     validate_iso_date, 
     validate_disease, 
@@ -61,12 +62,19 @@ def generate(
             validated_date, horizon, validated_disease, validated_granularity
         )
         logger.info(f"Generated {len(forecasts)} forecasts for date {used_date}")
+
+        effective_granularity = validated_granularity
+        if forecasts:
+            effective_granularity = forecasts[0].get(
+                "source_granularity",
+                validated_granularity,
+            )
         
         response = {
             "date": used_date, 
             "forecasts": forecasts, 
             "count": len(forecasts), 
-            "granularity": validated_granularity
+            "granularity": effective_granularity
         }
         if validated_disease:
             response["disease"] = validated_disease
@@ -119,12 +127,28 @@ def latest(
         )
 
         if not docs:
+            if validated_disease:
+                ensure_derived_data_for_disease(
+                    validated_disease,
+                    forecast_horizon=horizon,
+                    forecast_granularity="monthly",
+                )
+                docs = list(
+                    col.find(query, {"_id": 0})
+                    .sort("date", DESCENDING)
+                    .limit(horizon)
+                )
+
+        if not docs:
             logger.warning(
                 f"No forecasts found"
                 f"{' for region: ' + region_id if region_id else ''}"
                 f"{' disease: ' + validated_disease if validated_disease else ''}"
             )
-            return {"date": None, "forecasts": [], "count": 0}
+            response = {"date": None, "forecasts": [], "count": 0}
+            if validated_disease:
+                response["disease"] = validated_disease
+            return response
 
         # Reverse to get chronological order
         docs = list(reversed(docs))

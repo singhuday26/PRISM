@@ -8,6 +8,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 from backend.services.geojson import get_risk_geojson, get_region_boundaries
+from backend.services.derived_data_bootstrap import ensure_derived_data_for_disease
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -29,7 +30,13 @@ def get_risk_as_geojson(
         GeoJSON FeatureCollection with risk data
     """
     try:
-        geojson = get_risk_geojson(target_date=date, disease=disease)
+        normalized_disease = disease.strip().upper() if disease else None
+        geojson = get_risk_geojson(target_date=date, disease=normalized_disease)
+
+        if normalized_disease and not geojson.get("features"):
+            ensure_derived_data_for_disease(normalized_disease)
+            geojson = get_risk_geojson(target_date=date, disease=normalized_disease)
+
         return JSONResponse(
             content=geojson,
             headers={"Content-Type": "application/geo+json"}

@@ -22,6 +22,48 @@ LOOKBACK_CONFIG = {
 
 GranularityType = Literal["yearly", "monthly", "weekly", "daily"]
 
+FALLBACK_GRANULARITY_ORDER: tuple[GranularityType, ...] = (
+    "monthly",
+    "weekly",
+    "daily",
+    "yearly",
+)
+
+
+def _apply_granularity_filter(query: Dict, granularity: GranularityType) -> None:
+    if granularity == "yearly":
+        query["granularity"] = {"$exists": False}
+    else:
+        query["granularity"] = granularity
+
+
+def _resolve_available_granularity(
+    cases_col,
+    disease: Optional[str],
+    preferred: GranularityType,
+) -> GranularityType:
+    candidates = [preferred] + [
+        g for g in FALLBACK_GRANULARITY_ORDER if g != preferred
+    ]
+
+    for granularity in candidates:
+        query: Dict = {}
+        if disease:
+            query["disease"] = disease
+        _apply_granularity_filter(query, granularity)
+
+        if cases_col.find_one(query, {"_id": 1}) is not None:
+            if granularity != preferred:
+                logger.warning(
+                    "No %s data for %s; falling back to %s",
+                    preferred,
+                    disease or "ALL diseases",
+                    granularity,
+                )
+            return granularity
+
+    return preferred
+
 
 def _resolve_target_date(
     cases_col, 
@@ -37,10 +79,7 @@ def _resolve_target_date(
     if disease:
         case_filter["disease"] = disease
     if granularity:
-        if granularity == "yearly":
-            case_filter["granularity"] = {"$exists": False}  # Original yearly data
-        else:
-            case_filter["granularity"] = granularity
+        _apply_granularity_filter(case_filter, granularity)
     
     latest = cases_col.find_one(case_filter, sort=[("date", DESCENDING)])
     if not latest:
@@ -81,7 +120,18 @@ def generate_forecast(
         cases_col = db["cases_daily"]
         forecasts_col = db["forecasts_daily"]
 
-        target_date = _resolve_target_date(cases_col, target_date, disease, granularity)
+        effective_granularity = _resolve_available_granularity(
+            cases_col,
+            disease,
+            granularity,
+        )
+
+        target_date = _resolve_target_date(
+            cases_col,
+            target_date,
+            disease,
+            effective_granularity,
+        )
         if not target_date:
             logger.warning(f"No target date available for region {region_id}")
             return []
@@ -90,13 +140,10 @@ def generate_forecast(
         case_filter = {"region_id": region_id, "date": {"$lte": target_date}}
         if disease:
             case_filter["disease"] = disease
-        if granularity == "yearly":
-            case_filter["granularity"] = {"$exists": False}  # Original yearly data
-        else:
-            case_filter["granularity"] = granularity
+        _apply_granularity_filter(case_filter, effective_granularity)
         
         # Get lookback count based on granularity
-        lookback = LOOKBACK_CONFIG.get(granularity, 6)
+        lookback = LOOKBACK_CONFIG.get(effective_granularity, 6)
         
         last_docs = list(
             cases_col.find(case_filter)
@@ -106,7 +153,7 @@ def generate_forecast(
         if not last_docs:
             logger.debug(
                 f"No historical data for region {region_id} "
-                f"with granularity {granularity}"
+                f"with granularity {effective_granularity}"
             )
             return []
 
@@ -130,7 +177,7 @@ def generate_forecast(
                 "pred_upper": pred_upper,
                 "model_version": MODEL_VERSION,
                 "generated_at": run_ts,
-                "source_granularity": granularity,  # Track which data was used
+                "source_granularity": effective_granularity,  # Track which data was used
             }
             if disease:
                 doc["disease"] = disease
@@ -181,19 +228,30 @@ def generate_forecasts(
         cases_col = db["cases_daily"]
         regions_col = db["regions"]
 
-        resolved_date = _resolve_target_date(cases_col, target_date, disease, granularity)
+        effective_granularity = _resolve_available_granularity(
+            cases_col,
+            disease,
+            granularity,
+        )
+
+        resolved_date = _resolve_target_date(
+            cases_col,
+            target_date,
+            disease,
+            effective_granularity,
+        )
         if not resolved_date:
             logger.warning(
                 f"No date available for forecasts"
                 f"{' for disease: ' + disease if disease else ''}"
-                f"{' with granularity: ' + granularity if granularity else ''}"
+                f"{' with granularity: ' + effective_granularity if effective_granularity else ''}"
             )
             return "", []
 
         disease_info = f" for disease: {disease}" if disease else ""
         logger.info(
             f"Generating forecasts for date: {resolved_date} with horizon {horizon}"
-            f"{disease_info} using {granularity} data"
+            f"{disease_info} using {effective_granularity} data"
         )
         
         # Regions are disease-agnostic; all regions are evaluated regardless of disease filter
@@ -207,7 +265,7 @@ def generate_forecasts(
         for region in regions:
             region_id = region["region_id"]
             region_forecasts = generate_forecast(
-                region_id, resolved_date, horizon, run_ts, disease, granularity
+                region_id, resolved_date, horizon, run_ts, disease, effective_granularity
             )
             if not region_forecasts:
                 skipped += 1
@@ -217,7 +275,11 @@ def generate_forecasts(
             logger.warning(f"Skipped {skipped} regions due to missing data")
         
         results.sort(key=lambda x: (x.get("region_id", ""), x.get("date", "")))
-        logger.info(f"Generated {len(results)} forecast records using {granularity} data")
+        logger.info(
+            "Generated %d forecast records using %s data",
+            len(results),
+            effective_granularity,
+        )
         return resolved_date, results
     except Exception as e:
         logger.error(f"Error generating forecasts: {e}")
