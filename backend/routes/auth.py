@@ -34,7 +34,13 @@ async def get_current_user(token: Optional[str] = Depends(oauth2_scheme)):
     
     if not token:
         if os.getenv("DEMO_MODE", "True").lower() == "true":
-            return {"username": "Demo Viewer", "role": "viewer"}
+            # Return a full user-shaped object so response models stay valid in demo mode.
+            return {
+                "id": "demo-user",
+                "username": "Demo Viewer",
+                "email": "demo@prism.local",
+                "role": "viewer",
+            }
         else:
             raise credentials_exception
 

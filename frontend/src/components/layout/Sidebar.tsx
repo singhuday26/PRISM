@@ -49,7 +49,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-200 shrink-0">
-          <a href="http://localhost:5173/" className="flex items-center gap-2">
+          <a href="/" className="flex items-center gap-2">
             <img
               src="/prism-logo.png"
               alt="PRISM Logo"

@@ -16,15 +16,18 @@ class Settings(BaseSettings):
     # Additional robustness settings
     mongo_connect_timeout_ms: int = Field(5000, env="MONGO_CONNECT_TIMEOUT_MS", ge=1000)
     mongo_server_selection_timeout_ms: int = Field(5000, env="MONGO_SERVER_SELECTION_TIMEOUT_MS", ge=1000)
-    enable_cors: bool = Field(True, env="ENABLE_CORS")
-    cors_origins: str = Field("*", env="CORS_ORIGINS", description="Comma-separated list of allowed origins")
-    
+    enable_cors: bool = Field(False, env="ENABLE_CORS")
+    cors_origins: str = Field("", env="CORS_ORIGINS", description="Comma-separated list of allowed origins")
+    # Railway automatically injects RAILWAY_PUBLIC_DOMAIN for the deployed service URL.
+    # Reading it here lets us auto-allow the production origin without manual CORS updates.
+    railway_public_domain: Optional[str] = Field(None, env="RAILWAY_PUBLIC_DOMAIN")
+
     # Alerting Settings
     alert_channels: list[str] = Field(["console"], env="ALERT_CHANNELS", description="Enabled alert channels: console, email, sms")
     alert_email_recipients: list[str] = Field([], env="ALERT_EMAIL_RECIPIENTS")
     alert_sms_recipients: list[str] = Field([], env="ALERT_SMS_RECIPIENTS")
-    
-    
+
+
     # SMTP Settings for Email Notifications
     smtp_host: str = Field("localhost", env="SMTP_HOST")
     smtp_port: int = Field(587, env="SMTP_PORT")
@@ -52,10 +55,21 @@ class Settings(BaseSettings):
         return v_upper
 
     def get_cors_origins_list(self) -> list[str]:
-        """Parse CORS origins from comma-separated string."""
+        """Parse CORS origins from comma-separated string.
+
+        In production on Railway, automatically includes the deployed service URL
+        derived from the RAILWAY_PUBLIC_DOMAIN environment variable so you never
+        need to manually update CORS_ORIGINS when Railway assigns a new domain.
+        """
         if self.cors_origins == "*":
             return ["*"]
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        origins = [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        # Auto-inject the Railway production domain if available and not already listed
+        if self.railway_public_domain:
+            railway_url = f"https://{self.railway_public_domain}"
+            if railway_url not in origins:
+                origins.append(railway_url)
+        return origins
 
 
 @lru_cache()

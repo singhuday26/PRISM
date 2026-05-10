@@ -114,7 +114,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <a
-              href="http://localhost:5173/"
+              href="/"
               className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
             >
               <img

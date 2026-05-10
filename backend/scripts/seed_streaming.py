@@ -43,7 +43,6 @@ import os
 import random
 import sys
 from datetime import datetime, timedelta
-from pathlib import Path
 
 from pymongo import MongoClient, ASCENDING, DESCENDING
 
@@ -56,10 +55,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+# Connection: prefer DATABASE_URL (PaaS-injected Atlas URI) over MONGO_URI
+MONGO_URI = os.getenv("DATABASE_URL") or os.getenv("MONGO_URI", "mongodb://localhost:27017")
 DB_NAME   = os.getenv("DB_NAME",   "prism_db")
 
-PROGRESS_FILE = Path(__file__).parent / ".seed_progress.json"
+PROGRESS_COLLECTION = "seed_progress"  # MongoDB collection used for resume state
 
 # ── All 36 Indian States + UTs ─────────────────────────────────────────────────
 REGIONS = [
@@ -222,26 +222,31 @@ def stream_cases(region: dict, disease: str, num_days: int):
         }
 
 
-# ── Progress file helpers ──────────────────────────────────────────────────────
+# ── Progress tracking (MongoDB-backed, survives container restarts) ────────────
 
-def load_progress() -> set:
-    """Return set of already-completed 'REGION:DISEASE' pairs."""
-    if PROGRESS_FILE.exists():
-        try:
-            data = json.loads(PROGRESS_FILE.read_text())
-            return set(data.get("done", []))
-        except Exception:
-            pass
+def load_progress(db) -> set:
+    """Return set of already-completed 'REGION:DISEASE' pairs from MongoDB."""
+    try:
+        doc = db[PROGRESS_COLLECTION].find_one({"_id": "progress"})
+        if doc:
+            return set(doc.get("done", []))
+    except Exception:
+        pass
     return set()
 
 
-def save_progress(done: set):
-    PROGRESS_FILE.write_text(json.dumps({"done": sorted(done)}, indent=2))
+def save_progress(db, done: set):
+    """Persist completed pairs to MongoDB (upsert)."""
+    db[PROGRESS_COLLECTION].update_one(
+        {"_id": "progress"},
+        {"$set": {"done": sorted(done), "updated_at": datetime.now()}},
+        upsert=True,
+    )
 
 
-def clear_progress():
-    if PROGRESS_FILE.exists():
-        PROGRESS_FILE.unlink()
+def clear_progress(db):
+    """Remove the progress document from MongoDB."""
+    db[PROGRESS_COLLECTION].delete_one({"_id": "progress"})
 
 
 # ── News articles ──────────────────────────────────────────────────────────────
@@ -474,11 +479,11 @@ def main():
 
     # Resume or fresh start
     if args.resume:
-        done = load_progress()
+        done = load_progress(db)
         logger.info(f"  ↩  Resuming: {len(done)} pairs already completed")
     else:
         done = set()
-        clear_progress()
+        clear_progress(db)
         logger.info("Dropping existing data collections...")
         for col in ["regions", "cases_daily", "alerts", "forecasts_daily",
                     "resources_daily", "reports", "risk_scores",
@@ -536,7 +541,7 @@ def main():
                 grand_total_inserted += len(batch)
 
             done.add(pair_key)
-            save_progress(done)  # checkpoint after every region
+            save_progress(db, done)  # checkpoint after every region
 
         logger.info(f"  ✓ {disease}: inserted {disease_inserted:,} docs "
                     f"({grand_total_inserted:,} total so far)")
@@ -566,7 +571,7 @@ def main():
 
     logger.info("")
     logger.info("🚀 Done! Start PRISM: python start_prism.py")
-    clear_progress()  # clean up on successful completion
+    clear_progress(db)  # clean up on successful completion
 
 
 if __name__ == "__main__":

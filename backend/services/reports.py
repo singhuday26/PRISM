@@ -8,7 +8,6 @@ import io
 import base64
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any
-from pathlib import Path
 
 import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend
@@ -24,13 +23,14 @@ from reportlab.platypus import (
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
-from backend.db import get_db
+from backend.db import get_db, save_report_binary, load_report_binary
 
 logger = logging.getLogger(__name__)
 
-# Report output directory
-REPORTS_OUTPUT_DIR = Path(__file__).parent.parent.parent / "generated_reports"
-REPORTS_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+# REPORTS_OUTPUT_DIR has been removed.
+# PDFs are now stored in MongoDB GridFS so they persist across container
+# restarts and deploys on ephemeral hosts (Koyeb, HuggingFace, Render free).
+# The report document stores a 'gridfs_id' field instead of 'file_path'.
 
 # Custom colors
 PRISM_PRIMARY = colors.HexColor('#667eea')
@@ -435,12 +435,12 @@ def create_report(
             else:
                 raise ValueError(f"Unknown report type: {report_type}")
             
-            file_path = REPORTS_OUTPUT_DIR / f"{report_id}.pdf"
-            file_path.write_bytes(pdf_bytes)
-            
+            # ── Store PDF in MongoDB GridFS (survives container restarts) ──
+            gridfs_id = save_report_binary(pdf_bytes, filename=f"{report_id}.pdf")
+
             db["reports"].update_one(
                 {"report_id": report_id},
-                {"$set": {"status": "ready", "file_path": str(file_path), 
+                {"$set": {"status": "ready", "gridfs_id": gridfs_id,
                          "file_size_bytes": len(pdf_bytes), "generated_at": datetime.utcnow()}}
             )
             

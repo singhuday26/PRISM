@@ -80,7 +80,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
           <Menu className="w-5 h-5" />
         </button>
         <a
-          href="http://localhost:5173/"
+          href="/"
           className="md:hidden flex items-center gap-2"
         >
           <img

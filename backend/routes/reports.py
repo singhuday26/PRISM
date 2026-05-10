@@ -6,7 +6,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from backend.services.reports import (
@@ -14,6 +14,7 @@ from backend.services.reports import (
     get_report_status,
     list_reports
 )
+from backend.db import load_report_binary
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -200,48 +201,50 @@ def get_report(report_id: str):
 def download_report(report_id: str):
     """
     Download a generated PDF report.
-    
-    Args:
-        report_id: Report ID
-        
-    Returns:
-        PDF file
+
+    The PDF is fetched from MongoDB GridFS, so it is available even after a
+    container restart or redeploy (no local filesystem dependency).
     """
     try:
         report = get_report_status(report_id)
-        
+
         if not report:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Report not found"
             )
-        
+
         if report["status"] != "ready":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Report not ready. Status: {report['status']}"
             )
-        
-        file_path = report.get("file_path")
-        if not file_path:
+
+        gridfs_id = report.get("gridfs_id")
+        if not gridfs_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Report file path not found"
+                detail="Report binary not found in database"
             )
-        
-        return FileResponse(
-            file_path,
+
+        pdf_bytes = load_report_binary(gridfs_id)
+
+        return Response(
+            content=pdf_bytes,
             media_type="application/pdf",
-            filename=f"{report_id}.pdf"
+            headers={"Content-Disposition": f'attachment; filename="{report_id}.pdf"'},
         )
-        
+
     except HTTPException:
         raise
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report PDF not found in database. It may have been removed."
+        )
     except Exception as e:
         logger.error(f"Error downloading report: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to download report: {str(e)}"
         )
-
-

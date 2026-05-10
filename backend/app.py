@@ -74,15 +74,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     
-    @app.get("/")
-    def read_root():
-        """Root endpoint to verify the API is online."""
-        return {
-            "status": "online", 
-            "project": "PRISM", 
-            "message": "Backend API is running. Visit /docs for the API schema."
-        }
-    
+    # Root route is handled by the SPA static files server below.
+
     # Add CORS middleware
     if settings.enable_cors:
         app.add_middleware(
@@ -154,7 +147,7 @@ def create_app() -> FastAPI:
     app.include_router(api_router)
 
     # Serve frontend static files
-    frontend_dist = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+    frontend_dist = Path(__file__).resolve().parent / "static"
     if frontend_dist.exists():
         # First, ensure API and Docs take priority (already included above)
         

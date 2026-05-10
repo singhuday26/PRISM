@@ -1,5 +1,5 @@
 # --- Stage 1: Build Frontend ---
-FROM node:20-slim AS frontend-builder
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Install dependencies (utilize caching)
@@ -28,8 +28,8 @@ RUN pip install --no-cache-dir -U pip && \
 # Copy backend code
 COPY . .
 
-# Copy built frontend from Stage 1
-COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
+# Copy built frontend from Stage 1 into backend/static
+COPY --from=frontend-builder /app/frontend/dist /app/backend/static
 
 # Expose ports
 EXPOSE 8000 8501
@@ -37,8 +37,7 @@ EXPOSE 8000 8501
 # Environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    API_HOST=0.0.0.0 \
-    API_PORT=8000
+    PORT=8000
 
 # Default command
-CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD gunicorn backend.app:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT}
