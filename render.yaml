@@ -5,7 +5,7 @@ services:
     repo: https://github.com/singhuday26/PRISM.git
     branch: main
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend.app:app --host 0.0.0.0 --port $PORT
+    startCommand: gunicorn backend.app:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120
     envVars:
       - key: MONGO_URI
         sync: false  # Set manually in Render dashboard
@@ -16,9 +16,9 @@ services:
       - key: ENABLE_CORS
         value: "true"
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://prism-five-mauve.vercel.app,https://singhuday26-prism.hf.space,https://prism.vercel.app"
       - key: LOG_LEVEL
         value: INFO
       - key: PYTHONUNBUFFERED
         value: "1"
-    healthCheckPath: /health/ping
+    healthCheckPath: /api/health/ping

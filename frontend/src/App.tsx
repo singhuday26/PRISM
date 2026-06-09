@@ -12,6 +12,7 @@ import { LandingPage } from "./pages/LandingPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
+import { WakeUpBanner } from "./components/WakeUpBanner";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isDemo } = useAuth();
@@ -40,6 +41,7 @@ function App() {
   return (
     <AuthProvider>
       <ToastProvider>
+        <WakeUpBanner />
         <BrowserRouter basename="/">
           <Routes>
             <Route path="/" element={<LandingPage />} />

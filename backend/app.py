@@ -47,7 +47,13 @@ async def lifespan(app: FastAPI):
     try:
         ensure_indexes()
         ensure_cache_indexes()
-        logger.info("Application startup complete")
+        logger.info("=" * 60)
+        logger.info("🚀 PRISM API v0.1.0 — Server is WARM and ready")
+        logger.info(f"   Mode       : {'DEMO' if settings.demo_mode else 'PRODUCTION'}")
+        logger.info(f"   CORS       : {settings.get_cors_origins_list()}")
+        logger.info(f"   DB         : {settings.db_name}")
+        logger.info(f"   Docs       : http://localhost:{settings.api_port}/docs")
+        logger.info("=" * 60)
     except Exception as e:
         logger.error(f"Failed to initialize application: {e}")
         raise
